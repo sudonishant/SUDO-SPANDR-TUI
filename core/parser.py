@@ -1,6 +1,6 @@
 """
 RFC 5322 MIME Email Forensic Parser & Defect Analyzer
-Cyber Squad TUI - SIH Problem Statement #26106
+SUDO SPANDR TUI - SIH Problem Statement #26106
 """
 from __future__ import annotations
 

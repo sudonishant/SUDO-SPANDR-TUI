@@ -1,6 +1,6 @@
 """
 Section 63 Bharatiya Sakshya Adhiniyam (BSA 2023) Digital Evidence Certificate Generator
-Cyber Squad TUI - SIH Problem Statement #26106
+SUDO SPANDR TUI - SIH Problem Statement #26106
 """
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ from typing import Any, Dict, Optional
 def generate_bsa_certificate_data(
     evidence: Dict[str, Any],
     case_id: str = "AICTE-SIH26106-CASE-2026",
-    officer_name: str = "Digital Forensic Examiner (Team Cyber Squad)",
-    agency_name: str = "Digital Forensics & Incident Response Lab (AICTE SIH #26106)",
+    officer_name: str = "Digital Forensic Examiner (Team SUDO SPANDR)",
+    agency_name: str = "Digital Forensics & Incident Response Lab (Team SUDO SPANDR - AICTE SIH #26106)",
 ) -> Dict[str, Any]:
     """
     Constructs comprehensive forensic evidence metadata compliant with Section 63 BSA 2023.
@@ -48,7 +48,7 @@ def generate_bsa_certificate_data(
         "system_environment": {
             "workstation_hostname": hostname,
             "operating_system": os_info,
-            "software_tool": "Team Cyber Squad Forensic Suite (AICTE SIH 2026 Engine v2.0.0)",
+            "software_tool": "Team SUDO SPANDR Forensic Suite (AICTE SIH 2026 Engine v2.0.0)",
             "airgap_isolated": True,
         },
 
@@ -148,8 +148,8 @@ def export_bsa_certificate(
     evidence: Dict[str, Any],
     output_dir: str | Path = "./forensic_exports",
     case_id: str = "AICTE-SIH26106-CASE-2026",
-    officer_name: str = "Digital Forensic Examiner (Team Cyber Squad)",
-    agency_name: str = "Digital Forensics & Incident Response Lab (AICTE SIH #26106)",
+    officer_name: str = "Digital Forensic Examiner (Team SUDO SPANDR)",
+    agency_name: str = "Digital Forensics & Incident Response Lab (Team SUDO SPANDR - AICTE SIH #26106)",
 ) -> Dict[str, str]:
     """
     Exports court-admissible certificate files (.pdf, .txt, .json, and .sha256) to disk.

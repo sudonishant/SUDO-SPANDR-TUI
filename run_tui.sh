@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cyber Squad Forensic TUI Launcher
+# SUDO SPANDR Forensic TUI Launcher
 set -e
 
 # Resolve directory of this script

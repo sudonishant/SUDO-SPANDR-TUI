@@ -1,6 +1,6 @@
 """
 Shannon Entropy Visualizer, Magic Byte Signature Carver & ANSI Hex Dump Engine
-Cyber Squad TUI - SIH Problem Statement #26106
+SUDO SPANDR TUI - SIH Problem Statement #26106
 """
 from __future__ import annotations
 

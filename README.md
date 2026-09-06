@@ -1,12 +1,12 @@
-# 🛡️ Cyber Squad TUI (Terminal Forensic Engine) — SIH #26106
+# 🛡️ SUDO SPANDR TUI (Terminal Forensic Engine) — SIH #26106
 
-Standalone, 100% Offline, Air-Gap Ready Terminal Forensic Suite for **Law Enforcement Officers (LEOs)**, **SOC Incident Responders**, and **Forensic Labs** by **Team Cyber Squad**.
+Standalone, 100% Offline, Air-Gap Ready Terminal Forensic Suite for **Law Enforcement Officers (LEOs)**, **SOC Incident Responders**, and **Forensic Labs** by **Team SUDO SPANDR**.
 
 ---
 
-## 🌟 Why Cyber Squad TUI is Distinct from Web UI
+## 🌟 Why SUDO SPANDR TUI is Distinct from Web UI
 
-| Feature | Web Interface (`cybersquad-web`) | Cyber Squad TUI (`cybersquad-tui`) |
+| Feature | Web Interface (`sudospandr-web`) | SUDO SPANDR TUI (`sudospandr-tui`) |
 | :--- | :--- | :--- |
 | **Operational Environment** | Browser-based, requires HTTP ports, Node.js, Web servers. | **100% Offline / Air-Gapped / Headless SSH**. Runs directly on SANS SIFT, Kali Linux, CAINE, headless servers. |
 | **Data Privacy & Sanitization** | Client-server HTTP requests. | **Zero-Network In-Memory Processing**, zero disk cache leakage, memory-safe. |
@@ -22,7 +22,7 @@ Standalone, 100% Offline, Air-Gap Ready Terminal Forensic Suite for **Law Enforc
 
 ```bash
 # 1. Navigate to the project folder (Quotes are needed because of space in folder name)
-cd "/home/nee/Desktop/sih email/cybersquad-tui-master"
+cd "/home/nee/Desktop/sih email/sudospandr-tui-master"
 
 # 2. Launch directly using launcher script (or python3 app.py)
 ./run_tui.sh
@@ -94,7 +94,7 @@ cat raw_email.eml | python3 app.py --stdin
 
 ## 🏛️ Legal Compliance: Section 63 BSA 2023
 
-The Bharatiya Sakshya Adhiniyam, 2023 (BSA) governs the admissibility of electronic evidence in Indian courts. Cyber Squad TUI automatically generates:
+The Bharatiya Sakshya Adhiniyam, 2023 (BSA) governs the admissibility of electronic evidence in Indian courts. SUDO SPANDR TUI automatically generates:
 1. **Cryptographic Digests**: SHA-256, SHA-512, and MD5 computed directly from raw byte streams.
 2. **Chain of Custody**: UTC timestamping, host hardware node signature, and tool provenance.
 3. **Court-Ready Plain Text & Machine-Readable Manifests**: Exported with standard formatting ready for submission alongside cyber chargesheets.
@@ -104,7 +104,7 @@ The Bharatiya Sakshya Adhiniyam, 2023 (BSA) governs the admissibility of electro
 ## 📁 Architecture
 
 ```
-cybersquad-tui-master/
+sudospandr-tui-master/
 ├── app.py                     # Main CLI entrypoint & interactive event loop
 ├── requirements.txt           # Minimal dependencies
 ├── README.md                  # Comprehensive investigator documentation

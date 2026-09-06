@@ -1,7 +1,7 @@
 """
 Pure-Python Court-Admissible PDF Generator for Section 63 BSA 2023 Certificates
 Zero External Dependencies (Air-Gap & Offline Ready)
-Cyber Squad TUI - AICTE SIH 2026 Problem Statement #26106
+SUDO SPANDR TUI - AICTE SIH 2026 Problem Statement #26106
 """
 from __future__ import annotations
 

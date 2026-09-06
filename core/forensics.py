@@ -1,6 +1,6 @@
 """
 Forensic Threat Matrix, Relay Chronologist, & Authentication Engine
-Cyber Squad TUI - SIH Problem Statement #26106
+SUDO SPANDR TUI - SIH Problem Statement #26106
 """
 from __future__ import annotations
 

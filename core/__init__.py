@@ -1,5 +1,5 @@
 """
-Cyber Squad TUI - Forensic Core Engine
+SUDO SPANDR TUI - Forensic Core Engine
 SIH 2026 Problem Statement #26106
 """
 

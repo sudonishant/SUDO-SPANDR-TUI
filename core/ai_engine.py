@@ -1,6 +1,6 @@
 """
 AI Forensic Analyst & Second Opinion Engine
-Cyber Squad TUI - AICTE SIH Problem Statement #26106
+SUDO SPANDR TUI - AICTE SIH Problem Statement #26106
 
 Supports:
 1. Offline Deterministic Cognitive NLP & Linguistic Forensic Analyzer (100% Air-Gap Safe)
@@ -105,7 +105,7 @@ def perform_offline_cognitive_nlp_analysis(evidence: Dict[str, Any], threat: Dic
     )
 
     return {
-        "engine": "CyberSquad Cognitive AI Forensics (Offline NLP Model)",
+        "engine": "SUDO SPANDR Cognitive AI Forensics (Offline NLP Model)",
         "attack_vector": attack_vector,
         "confidence_percent": confidence,
         "psychological_triggers": psych_vectors,
@@ -170,7 +170,7 @@ Return JSON format:
             headers={
                 "Authorization": f"Bearer {key}",
                 "Content-Type": "application/json",
-                "HTTP-Referer": "https://cybersquad-sih2026.gov.in",
+                "HTTP-Referer": "https://sudospandr-sih2026.gov.in",
             },
             method="POST",
         )

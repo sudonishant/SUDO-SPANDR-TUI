@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Cyber Squad TUI (Terminal User Interface Forensic Suite) v2.4
+SUDO SPANDR TUI (Terminal User Interface Forensic Suite) v2.4
 AICTE - Smart India Hackathon 2026 | Problem Statement #26106
-Team Cyber Squad — 100% Offline & Air-Gap Ready Email Forensic Workstation
+Team SUDO SPANDR — 100% Offline & Air-Gap Ready Email Forensic Workstation
 """
 from __future__ import annotations
 
@@ -188,7 +188,7 @@ def render_header(state: ForensicTUIState) -> Panel:
     badge = f"[{score_color}]THREAT SCORE: {risk_score}/100[/{score_color}]"
 
     title_text = Text.from_markup(
-        f"[bold bright_magenta]CYBERSQUAD FORENSIC TUI v2.4[/bold bright_magenta] [dim]───[/dim] "
+        f"[bold bright_magenta]SUDO SPANDR FORENSIC TUI v2.4[/bold bright_magenta] [dim]───[/dim] "
         f"[bold bright_cyan]AICTE SIH #26106[/bold bright_cyan] [dim]───[/dim] "
         f"[yellow]Mode: OFFLINE AIR-GAP TRIAGE[/yellow]   "
         f"{badge}   [dim][{time_str}][/dim]"
@@ -683,7 +683,7 @@ def render_tab_8_help() -> Panel:
     """Tab 8: Simple Hotkeys Reference."""
     help_text = """
 [bold bright_magenta]AICTE - SMART INDIA HACKATHON 2026 | PROBLEM STATEMENT #26106[/bold bright_magenta]
-[bold bright_cyan]TEAM CYBER SQUAD — AIR-GAPPED FORENSIC TERMINAL SUITE[/bold bright_cyan]
+[bold bright_cyan]TEAM SUDO SPANDR — AIR-GAPPED FORENSIC TERMINAL SUITE[/bold bright_cyan]
 
 [bold cyan]KEYBOARD CONTROLS:[/bold cyan]
   [bold white][1-8][/bold white]       Switch views (1: 4-Panel Deck, 2: Hop Map, 3: CatBERT, 4: Hex, 5: BSA-63, 6: Batch, 7: YARA, 8: Help)
@@ -852,19 +852,19 @@ def run_interactive_tui(state: ForensicTUIState):
         if is_tty and old_settings:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
         console.clear()
-        console.print("[bold green]✔ Cyber Squad Forensic TUI session closed.[/bold green]\n")
+        console.print("[bold green]✔ SUDO SPANDR Forensic TUI session closed.[/bold green]\n")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Cyber Squad TUI v2.4 - Standalone Terminal Forensic Engine (SIH #26106)"
+        description="SUDO SPANDR TUI v2.4 - Standalone Terminal Forensic Engine (SIH #26106)"
     )
     parser.add_argument("file", nargs="?", default=None, help="Path to evidence file (.eml, .msg, .pst)")
     parser.add_argument("--batch", "--batch-scan", metavar="DIR", dest="batch", help="Run batch forensic triage on directory of evidence files")
     parser.add_argument("--export-csv", metavar="OUT_CSV", help="Export batch triage report to CSV")
     parser.add_argument("--cert", metavar="FILE", help="Generate Section 63 BSA 2023 PDF/Text Certificate for file")
-    parser.add_argument("--officer", default="Digital Forensic Examiner (Team Cyber Squad)", help="Investigating Officer name for BSA Certificate")
-    parser.add_argument("--agency", default="Digital Forensics Lab (AICTE SIH #26106)", help="Agency/Lab name for BSA Certificate")
+    parser.add_argument("--officer", default="Digital Forensic Examiner (Team SUDO SPANDR)", help="Investigating Officer name for BSA Certificate")
+    parser.add_argument("--agency", default="Digital Forensics Lab (Team SUDO SPANDR - AICTE SIH #26106)", help="Agency/Lab name for BSA Certificate")
     parser.add_argument("--export-yara", metavar="FILE", help="Generate YARA threat hunting rule for file")
     parser.add_argument("--export-snort", metavar="FILE", help="Generate Snort network IDS rule for file")
     parser.add_argument("--ai", action="store_true", help="Run CatBERT Cognitive Forensic Intent Analysis")
