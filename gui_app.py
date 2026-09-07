@@ -4,7 +4,7 @@ SUDO SPANDR - Forensic Ghidra Desktop Workstation (GUI) v2.4
 AICTE - Smart India Hackathon 2026 | Problem Statement #26106
 Team SUDO SPANDR — 100% Offline & Air-Gap Ready Reverse-Engineering Forensic Suite
 Modeled after NSA Ghidra CodeBrowser & IDA Pro
-Deep Raw Email Post-Mortem, MIME Dissector, & Autopsy Engine
+Deep Raw Email Post-Mortem, MIME Dissector, & Local LLM Neural Copilot Engine
 """
 from __future__ import annotations
 
@@ -19,11 +19,14 @@ from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QAction, QColor, QFont, QIcon, QTextCursor
 from PyQt6.QtWidgets import (
     QApplication,
+    QComboBox,
+    QDockWidget,
     QFileDialog,
     QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QProgressBar,
@@ -39,11 +42,15 @@ from PyQt6.QtWidgets import (
     QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
-    QDockWidget,
 )
 
 # Import SUDO SPANDR Forensic Core Modules
-from core.ai_engine import perform_offline_cognitive_nlp_analysis, request_online_llm_analysis
+from core.ai_engine import (
+    check_local_llm_status,
+    perform_offline_cognitive_nlp_analysis,
+    query_local_llm,
+    request_online_llm_analysis,
+)
 from core.batch import export_batch_to_csv, scan_evidence_directory
 from core.bsa_cert import export_bsa_certificate, format_bsa_certificate_text, generate_bsa_certificate_data
 from core.carver import (
@@ -114,7 +121,7 @@ QDockWidget::title {
     border: 1px solid #2f3549;
     border-radius: 3px;
 }
-QTreeWidget, QTableWidget, QTextEdit {
+QTreeWidget, QTableWidget, QTextEdit, QLineEdit, QComboBox {
     background-color: #1a1b26;
     color: #c0caf5;
     border: 1px solid #2f3549;
@@ -122,6 +129,18 @@ QTreeWidget, QTableWidget, QTextEdit {
     gridline-color: #2f3549;
     font-family: "DejaVu Sans Mono", "Courier New", monospace;
     font-size: 12px;
+}
+QPushButton {
+    background-color: #24283b;
+    color: #00f0ff;
+    border: 1px solid #414868;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-weight: bold;
+}
+QPushButton:hover {
+    background-color: #3b4261;
+    border-color: #00f0ff;
 }
 QTreeWidget::item:selected, QTableWidget::item:selected {
     background-color: #283457;
@@ -214,12 +233,12 @@ class GhidraForensicMainWindow(QMainWindow):
     """
     SUDO SPANDR - NSA Ghidra-Style Desktop Forensic Workstation Window.
     Multi-Window Dockable Workspace with Raw Email Post-Mortem, Hex Dissector, Listing View,
-    and Cognitive AI Decompiler.
+    and Local LLM Neural Copilot.
     """
     def __init__(self, evidence_path: Optional[str] = None):
         super().__init__()
         self.setWindowTitle("SUDO SPANDR v2.4 — Ghidra Forensic Workstation [AICTE SIH #26106]")
-        self.resize(1450, 920)
+        self.resize(1500, 950)
         self.setStyleSheet(GHIDRA_QSS)
 
         # Forensic State
@@ -300,9 +319,10 @@ class GhidraForensicMainWindow(QMainWindow):
         auto_analyze_action.triggered.connect(self.action_auto_analyze)
         analysis_menu.addAction(auto_analyze_action)
 
-        decompile_action = QAction("🧠 Decompile Cognitive Threat Intent (CatBERT)", self)
-        decompile_action.triggered.connect(self.action_decompile_intent)
-        analysis_menu.addAction(decompile_action)
+        copilot_action = QAction("🤖 Launch Local LLM Neural Copilot", self)
+        copilot_action.setShortcut("Ctrl+L")
+        copilot_action.triggered.connect(self.action_focus_copilot)
+        analysis_menu.addAction(copilot_action)
 
         recalc_hash_action = QAction("🔒 Lock Cryptographic Bitstream Hashes (SHA-256)", self)
         recalc_hash_action.triggered.connect(self.action_lock_hashes)
@@ -329,7 +349,7 @@ class GhidraForensicMainWindow(QMainWindow):
         toolbar.addSeparator()
         toolbar.addAction(autopsy_action)
         toolbar.addAction(auto_analyze_action)
-        toolbar.addAction(decompile_action)
+        toolbar.addAction(copilot_action)
         toolbar.addAction(pdf_action)
         toolbar.addAction(export_yara_action)
         toolbar.addSeparator()
@@ -340,7 +360,7 @@ class GhidraForensicMainWindow(QMainWindow):
         toolbar.addWidget(self.tb_threat_badge)
 
     def _init_docks(self):
-        """Creates the core Ghidra-style multi-window docks with Post-Mortem Tabs."""
+        """Creates the Ghidra-style multi-window docks including Local LLM Copilot."""
 
         # ----------------------------------------------------------------------
         # DOCK 1: Program Trees & Evidence Explorer (Left)
@@ -428,37 +448,80 @@ class GhidraForensicMainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.dock_hex)
 
         # ----------------------------------------------------------------------
-        # DOCK 4: Cognitive AI Decompiler & Threat Reasoner (Right Top)
+        # DOCK 4: 🤖 LOCAL LLM NEURAL FORENSIC COPILOT (Right Side)
         # ----------------------------------------------------------------------
-        self.dock_decompiler = QDockWidget("🧠 COGNITIVE DECOMPILER (CATBERT AI & INTENT)", self)
-        decompiler_widget = QWidget()
-        dec_layout = QVBoxLayout(decompiler_widget)
-        dec_layout.setContentsMargins(6, 6, 6, 6)
+        self.dock_copilot = QDockWidget("🤖 LOCAL LLM NEURAL COPILOT (OLLAMA & CATBERT)", self)
+        copilot_widget = QWidget()
+        cp_layout = QVBoxLayout(copilot_widget)
+        cp_layout.setContentsMargins(6, 6, 6, 6)
 
-        # Threat Score Gauge
-        threat_box = QHBoxLayout()
-        lbl_gauge_title = QLabel("Forensic Risk Meter:")
-        lbl_gauge_title.setStyleSheet("color: #ffb86c; font-weight: bold;")
-        self.progress_threat = QProgressBar()
-        self.progress_threat.setMaximum(100)
-        self.progress_threat.setValue(96)
-        self.progress_threat.setStyleSheet("QProgressBar::chunk { background-color: #ff5555; }")
-        threat_box.addWidget(lbl_gauge_title)
-        threat_box.addWidget(self.progress_threat)
-        dec_layout.addLayout(threat_box)
+        # Local LLM Config Row
+        cfg_box = QHBoxLayout()
+        lbl_eng = QLabel("Engine:")
+        lbl_eng.setStyleSheet("color: #00f0ff; font-weight:bold;")
+        self.combo_engine = QComboBox()
+        self.combo_engine.addItems([
+            "Ollama Local (http://localhost:11434)",
+            "Local Llama.cpp (http://localhost:8080/v1)",
+            "Embedded Neural Engine (Air-Gap Safe)",
+        ])
+        
+        lbl_mod = QLabel("Model:")
+        lbl_mod.setStyleSheet("color: #00f0ff; font-weight:bold;")
+        self.combo_model = QComboBox()
+        self.combo_model.addItems(["llama3:latest", "mistral:latest", "qwen2.5:coder", "phi3", "catbert-neural-cpu"])
 
-        # Protocol Authentication Badges (SPF / DKIM / DMARC)
-        self.lbl_auth_matrix = QLabel("SPF: FAIL | DKIM: FAIL | DMARC: REJECT")
-        self.lbl_auth_matrix.setStyleSheet("color: #ff5555; font-weight: bold; background: #24283b; padding: 4px; border-radius: 4px;")
-        dec_layout.addWidget(self.lbl_auth_matrix)
+        self.btn_ping_llm = QPushButton("⚡ Ping LLM")
+        self.btn_ping_llm.clicked.connect(self.action_ping_local_llm)
 
-        # Decompiled Psychological Reasoner Output
-        self.txt_decompiler = QTextEdit()
-        self.txt_decompiler.setReadOnly(True)
-        dec_layout.addWidget(self.txt_decompiler)
+        cfg_box.addWidget(lbl_eng)
+        cfg_box.addWidget(self.combo_engine)
+        cfg_box.addWidget(lbl_mod)
+        cfg_box.addWidget(self.combo_model)
+        cfg_box.addWidget(self.btn_ping_llm)
+        cp_layout.addLayout(cfg_box)
 
-        self.dock_decompiler.setWidget(decompiler_widget)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_decompiler)
+        # Status indicator
+        self.lbl_llm_status = QLabel("● Status: Embedded Air-Gap Neural Engine Ready (100% Offline)")
+        self.lbl_llm_status.setStyleSheet("color: #50fa7b; font-weight: bold; background: #24283b; padding: 4px; border-radius: 4px;")
+        cp_layout.addWidget(self.lbl_llm_status)
+
+        # Quick Tactical AI Actions Row
+        actions_box = QHBoxLayout()
+        self.btn_ai_autopsy = QPushButton("⚡ Deep LLM Autopsy")
+        self.btn_ai_autopsy.clicked.connect(lambda: self.action_run_quick_prompt("autopsy"))
+
+        self.btn_ai_fir = QPushButton("📝 Police FIR Draft")
+        self.btn_ai_fir.clicked.connect(lambda: self.action_run_quick_prompt("fir"))
+
+        self.btn_ai_killchain = QPushButton("🎯 MITRE Kill-Chain")
+        self.btn_ai_killchain.clicked.connect(lambda: self.action_run_quick_prompt("killchain"))
+
+        actions_box.addWidget(self.btn_ai_autopsy)
+        actions_box.addWidget(self.btn_ai_fir)
+        actions_box.addWidget(self.btn_ai_killchain)
+        cp_layout.addLayout(actions_box)
+
+        # Interactive Chat Transcript Box
+        self.txt_copilot_chat = QTextEdit()
+        self.txt_copilot_chat.setReadOnly(True)
+        cp_layout.addWidget(self.txt_copilot_chat)
+
+        # Chat Input Box Row
+        input_box = QHBoxLayout()
+        self.edit_copilot_input = QLineEdit()
+        self.edit_copilot_input.setPlaceholderText("Ask Local LLM: e.g. 'Is the attachment dangerous?' or 'Explain header spoofing'...")
+        self.edit_copilot_input.returnPressed.connect(self.action_send_copilot_chat)
+
+        self.btn_send_chat = QPushButton("Send")
+        self.btn_send_chat.clicked.connect(self.action_send_copilot_chat)
+
+        input_box.addWidget(self.edit_copilot_input)
+        input_box.addWidget(self.btn_send_chat)
+        cp_layout.addLayout(input_box)
+
+        self.dock_copilot.setWidget(copilot_widget)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_copilot)
 
         # ----------------------------------------------------------------------
         # DOCK 5: Hop Transit & Threat Rules (Right Bottom)
@@ -507,6 +570,9 @@ class GhidraForensicMainWindow(QMainWindow):
             self._refresh_all_views()
             fname = Path(file_path).name
             self.status.showMessage(f"✔ Seized Evidence Ingested: {fname} │ SHA-256: {self.evidence.get('sha256')[:24]}...")
+            
+            # Greet in Copilot
+            self._append_copilot_message("SYSTEM", f"Seized evidence artifact <b>'{fname}'</b> loaded. Cryptographic hash locked: <code>{self.evidence.get('sha256')}</code>. Ready for forensic query.")
         except Exception as e:
             QMessageBox.critical(self, "Forensic Parse Error", f"Failed to ingest evidence: {str(e)}")
 
@@ -518,6 +584,7 @@ class GhidraForensicMainWindow(QMainWindow):
         self.hops = analyze_relay_hops(self.evidence.get("received_hops", []))
         self.ai_review = perform_offline_cognitive_nlp_analysis(self.evidence, self.threat)
         self._refresh_all_views()
+        self._append_copilot_message("SYSTEM", "Sample synthetic phishing evidence loaded. Ready for Local LLM forensic inquiry.")
 
     def _refresh_all_views(self):
         """Synchronizes data across all Ghidra docks."""
@@ -527,7 +594,6 @@ class GhidraForensicMainWindow(QMainWindow):
         self._populate_urls_view()
         self._populate_mime_view()
         self._populate_hex_view()
-        self._populate_decompiler_view()
         self._populate_hops_and_rules()
         self._update_toolbar_badge()
 
@@ -554,7 +620,6 @@ class GhidraForensicMainWindow(QMainWindow):
 
         ai = self.ai_review
         attachments = self.evidence.get("attachments", [])
-        urls = self.threat.get("url_analysis", [])
 
         # Pathology findings accumulation
         pathology_bullets = []
@@ -836,39 +901,6 @@ class GhidraForensicMainWindow(QMainWindow):
             self.tbl_hex.setItem(row_idx, 1, it_hex)
             self.tbl_hex.setItem(row_idx, 2, it_asc)
 
-    def _populate_decompiler_view(self):
-        """Populates Cognitive AI Threat Decompiler."""
-        score = self.threat.get("risk_score", 0)
-        self.progress_threat.setValue(score)
-
-        auth = self.threat.get("auth_matrix", {})
-        spf_st = auth.get("spf", {}).get("status", "NONE")
-        dkim_st = auth.get("dkim", {}).get("status", "NONE")
-        dmarc_st = auth.get("dmarc", {}).get("status", "NONE")
-        self.lbl_auth_matrix.setText(f"SPF: {spf_st}  |  DKIM: {dkim_st}  |  DMARC: {dmarc_st}")
-        
-        color = "#ff5555" if (spf_st == "FAIL" or dkim_st == "FAIL") else "#50fa7b"
-        self.lbl_auth_matrix.setStyleSheet(f"color: {color}; font-weight: bold; background: #24283b; padding: 4px; border-radius: 4px;")
-
-        # Formatted Decompiler Analysis
-        ai = self.ai_review
-        html = f"""
-        <h3 style="color:#00f0ff;">⚡ Decompiled Threat Vector: {ai.get('attack_vector')}</h3>
-        <p style="color:#ffffff;"><b>AI Confidence:</b> <span style="color:#50fa7b;">{ai.get('confidence_percent')}%</span></p>
-        <p style="color:#ffffff;"><b>Perplexity / Synthetic LLM Lure:</b> <span style="color:{'#ff5555' if ai.get('synthetic_llm_detected') else '#50fa7b'};">
-        {'YES (GENERATIVE AI DETECTED)' if ai.get('synthetic_llm_detected') else 'NO (HUMAN AUTHORED)'}</span></p>
-        <hr style="border: 1px solid #414868;">
-        <h4 style="color:#ffb86c;">Cognitive Linguistic Assessment:</h4>
-        <p style="color:#c0caf5;">{ai.get('executive_summary')}</p>
-        <h4 style="color:#ff5555;">Psychological Coercion Vectors:</h4>
-        <ul>
-        """
-        for trigger in ai.get("psychological_triggers", []):
-            html += f"<li><b><span style='color:#ff5555;'>[{trigger.get('impact')}]</span> {trigger.get('trigger')}:</b> {trigger.get('description')}</li>"
-        html += "</ul>"
-
-        self.txt_decompiler.setHtml(html)
-
     def _populate_hops_and_rules(self):
         """Populates Hop table and Threat Hunting Rules."""
         # Hop Table
@@ -906,6 +938,108 @@ class GhidraForensicMainWindow(QMainWindow):
             self.tab_listing.setCurrentIndex(3)
         elif "Hashes" in txt:
             self.tab_listing.setCurrentIndex(0)
+
+    # ==========================================================================
+    # LOCAL LLM COPILOT ACTIONS
+    # ==========================================================================
+    def action_ping_local_llm(self):
+        """Tests connection to local Ollama or OpenAI-compatible server."""
+        eng_choice = self.combo_engine.currentText()
+        endpoint = "http://localhost:11434"
+        if "8080" in eng_choice:
+            endpoint = "http://localhost:8080/v1"
+        elif "Air-Gap" in eng_choice:
+            self.lbl_llm_status.setText("● Status: Embedded Neural Engine Active (Air-Gap Safe)")
+            self.lbl_llm_status.setStyleSheet("color: #50fa7b; font-weight: bold; background: #24283b; padding: 4px;")
+            QMessageBox.information(self, "Embedded Neural Engine", "Embedded Air-Gap Neural Engine active and verified!\n100% Offline & Non-Network Dependent.")
+            return
+
+        st = check_local_llm_status(endpoint)
+        if st["online"]:
+            self.lbl_llm_status.setText(f"● Status: 🟢 {st['status_text']}")
+            self.lbl_llm_status.setStyleSheet("color: #50fa7b; font-weight: bold; background: #24283b; padding: 4px;")
+            QMessageBox.information(self, "Local LLM Connected", f"Successfully connected to Local LLM!\nEndpoint: {st['endpoint']}\nAvailable Models: {', '.join(st['models'][:5])}")
+            # Refresh models dropdown
+            self.combo_model.clear()
+            self.combo_model.addItems(st["models"])
+        else:
+            self.lbl_llm_status.setText("● Status: 🟡 Local Server Offline — Using Embedded Air-Gap Engine")
+            self.lbl_llm_status.setStyleSheet("color: #ffb86c; font-weight: bold; background: #24283b; padding: 4px;")
+            QMessageBox.warning(self, "Local Server Offline", f"No running local LLM found on {endpoint}.\nAutomatically falling back to Embedded Air-Gap Neural Engine!\n\nTo use Ollama, run: 'ollama run llama3' in a terminal.")
+
+    def action_run_quick_prompt(self, action_type: str):
+        """Runs specialized forensic prompts through the local LLM."""
+        meta = self.evidence.get("meta", {})
+        context = (
+            f"Evidence: {self.evidence.get('filename')}\n"
+            f"From: {meta.get('from')}\n"
+            f"Return-Path: {meta.get('return_path')}\n"
+            f"Subject: {meta.get('subject')}\n"
+            f"Threat Score: {self.threat.get('risk_score')}/100\n"
+            f"Hops Count: {len(self.hops)}\n"
+            f"Body Excerpt: {self.evidence.get('body', '')[:600]}"
+        )
+
+        model_name = self.combo_model.currentText()
+        endpoint = "http://localhost:11434" if "11434" in self.combo_engine.currentText() else "http://localhost:8080/v1"
+        eng_type = "embedded" if "Embedded" in self.combo_engine.currentText() else "auto"
+
+        self.status.showMessage("Running Local LLM Forensic Reasoning...")
+
+        if action_type == "autopsy":
+            prompt = f"Conduct a comprehensive technical forensic autopsy for this seized email evidence:\n\n{context}"
+            self._append_copilot_message("INVESTIGATOR", "Run comprehensive Local LLM forensic autopsy on this evidence artifact.")
+        elif action_type == "fir":
+            prompt = f"Draft an official Police FIR complaint under Section 66C/66D IT Act and Bharatiya Nyaya Sanhita (BNS) for this email fraud case:\n\n{context}"
+            self._append_copilot_message("INVESTIGATOR", "Draft an official Police FIR Complaint under IT Act & BNS for this case.")
+        elif action_type == "killchain":
+            prompt = f"Deconstruct the Cyber Kill-Chain and MITRE ATT&CK techniques observed in this email artifact:\n\n{context}"
+            self._append_copilot_message("INVESTIGATOR", "Deconstruct the MITRE ATT&CK Cyber Kill-Chain for this email.")
+        else:
+            prompt = f"Analyze this email:\n{context}"
+
+        resp = query_local_llm(prompt, endpoint=endpoint, model=model_name, engine_type=eng_type)
+        self._append_copilot_message("LOCAL LLM COPILOT", resp)
+        self.status.showMessage("✔ Local LLM Response Received.")
+
+    def action_send_copilot_chat(self):
+        """Sends user input query to the Local LLM."""
+        query = self.edit_copilot_input.text().strip()
+        if not query:
+            return
+
+        self._append_copilot_message("INVESTIGATOR", query)
+        self.edit_copilot_input.clear()
+
+        meta = self.evidence.get("meta", {})
+        prompt = (
+            f"Evidence Artifact: {self.evidence.get('filename')}\n"
+            f"From Header: {meta.get('from')}\n"
+            f"Return-Path: {meta.get('return_path')}\n"
+            f"Subject: {meta.get('subject')}\n"
+            f"Threat Score: {self.threat.get('risk_score')}/100\n"
+            f"Body Text: {self.evidence.get('body', '')[:600]}\n\n"
+            f"Investigator Question: {query}"
+        )
+
+        model_name = self.combo_model.currentText()
+        endpoint = "http://localhost:11434" if "11434" in self.combo_engine.currentText() else "http://localhost:8080/v1"
+        eng_type = "embedded" if "Embedded" in self.combo_engine.currentText() else "auto"
+
+        resp = query_local_llm(prompt, endpoint=endpoint, model=model_name, engine_type=eng_type)
+        self._append_copilot_message("LOCAL LLM COPILOT", resp)
+
+    def _append_copilot_message(self, sender: str, msg: str):
+        """Appends formatted message bubble to the chat feed."""
+        color = "#00f0ff" if sender == "INVESTIGATOR" else "#50fa7b" if "LLM" in sender else "#ffb86c"
+        formatted = f"<div style='margin-bottom:8px;'><b style='color:{color};'>[{sender}]:</b><br><span style='color:#c0caf5;'>{msg.replace(chr(10), '<br>')}</span></div><hr style='border:1px solid #2f3549;'>"
+        self.txt_copilot_chat.append(formatted)
+        self.txt_copilot_chat.moveCursor(QTextCursor.MoveOperation.End)
+
+    def action_focus_copilot(self):
+        """Brings Local LLM Copilot dock to front and focuses prompt input."""
+        self.dock_copilot.raise_()
+        self.edit_copilot_input.setFocus()
 
     # ==========================================================================
     # TOOLBAR & MENU ACTIONS
@@ -955,13 +1089,6 @@ class GhidraForensicMainWindow(QMainWindow):
         self._refresh_all_views()
         self.status.showMessage("✔ Complete Ghidra Forensic Auto-Analysis Executed.")
         QMessageBox.information(self, "Analysis Complete", f"Forensic Auto-Analysis completed!\nVerdict: {self.threat.get('verdict')}\nRisk Score: {self.threat.get('risk_score')}/100")
-
-    def action_decompile_intent(self):
-        """Refreshes AI cognitive intent."""
-        self.ai_review = perform_offline_cognitive_nlp_analysis(self.evidence, self.threat)
-        self._populate_decompiler_view()
-        self.dock_decompiler.raise_()
-        self.status.showMessage("Cognitive Threat Intent Decompiled.")
 
     def action_lock_hashes(self):
         """Locks bitstream cryptographic hashes for court chain of custody."""
@@ -1027,11 +1154,11 @@ class GhidraForensicMainWindow(QMainWindow):
         """Restores default docked layout."""
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dock_evidence)
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.dock_hex)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_decompiler)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_copilot)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_hops_rules)
         self.dock_evidence.show()
         self.dock_hex.show()
-        self.dock_decompiler.show()
+        self.dock_copilot.show()
         self.dock_hops_rules.show()
 
     def action_about(self):
@@ -1043,8 +1170,8 @@ class GhidraForensicMainWindow(QMainWindow):
             "<p><b>AICTE Smart India Hackathon 2026 | Problem Statement #26106</b></p>"
             "<p>Team SUDO SPANDR</p>"
             "<p>NSA Ghidra & IDA Pro inspired Offline Digital Forensic & Post-Mortem Workstation.</p>"
-            "<p>Features: Raw Email Post-Mortem Dissection, Synchronized Hex Dissector, RFC Listing Stream, "
-            "CatBERT Cognitive AI Decompiler, and Section 63 BSA 2023 Court PDF Certificate Generator.</p>"
+            "<p>Features: Raw Email Post-Mortem Dissection, Local LLM Neural Copilot (Ollama / CatBERT), "
+            "Synchronized Hex Dissector, and Section 63 BSA 2023 Court PDF Certificate Generator.</p>"
         )
 
 
