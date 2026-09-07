@@ -18,17 +18,23 @@ Standalone, 100% Offline, Air-Gap Ready Terminal Forensic Suite for **Law Enforc
 
 ---
 
-## 🚀 Quick Start & Installation
+## 🚀 Quick Start & Launch Modes
 
+SUDO SPANDR provides two forensic operational modes:
+
+### 1. 🖥️ NSA Ghidra-Style Forensic Desktop GUI (Recommended)
+Military-grade multi-window desktop GUI with dockable panes, raw email post-mortem dissector, synchronized byte/hex carver, and cognitive AI intent decompiler:
 ```bash
-# 1. Navigate to the project folder (Quotes are needed because of space in folder name)
-cd "/home/nee/Desktop/sih email/sudospandr-tui-master"
+cd "/home/nee/Desktop/sih email/cybersquad-tui-master"
+./run_gui.sh
+# Or: python3 gui_app.py "/path/to/evidence.eml"
+```
 
-# 2. Launch directly using launcher script (or python3 app.py)
+### 2. ⚡ Terminal TUI Workstation (Headless / Air-Gapped SSH)
+Interactive terminal suite for remote SSH or command-line triage:
+```bash
 ./run_tui.sh
-
-# Or run directly with Python:
-python3 app.py
+# Or: python3 app.py "/path/to/evidence.eml"
 ```
 
 > [!NOTE]
