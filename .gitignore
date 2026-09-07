@@ -7,3 +7,5 @@ forensic_exports/
 env/
 venv/
 *.png
+!report_assets/*.png
+monograph.html
