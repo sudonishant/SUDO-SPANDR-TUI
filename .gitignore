@@ -6,3 +6,4 @@ forensic_exports/
 .venv
 env/
 venv/
+*.png

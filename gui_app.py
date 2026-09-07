@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-SUDO SPANDR - Forensic Ghidra Desktop Workstation (GUI) v2.4
+SUDO SPANDR - Forensic Ghidra Desktop Workstation (GUI) v2.5
 AICTE - Smart India Hackathon 2026 | Problem Statement #26106
 Team SUDO SPANDR — 100% Offline & Air-Gap Ready Reverse-Engineering Forensic Suite
-Modeled after NSA Ghidra CodeBrowser & IDA Pro
-Deep Raw Email Post-Mortem, MIME Dissector, & Local LLM Neural Copilot Engine
+Modeled after NSA Ghidra CodeBrowser & Modern Cyber Threat Intelligence Platforms
+Deep Raw Email Post-Mortem, Visual Pathology Cards, MIME Dissector & Local LLM Copilot
 """
 from __future__ import annotations
 
+import html
 import os
 import re
 import sys
@@ -23,6 +24,8 @@ from PyQt6.QtWidgets import (
     QDockWidget,
     QFileDialog,
     QFrame,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -31,6 +34,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSplitter,
     QStatusBar,
     QTableWidget,
@@ -64,22 +68,22 @@ from core.parser import parse_email_evidence
 from core.pdf_gen import export_bsa_pdf
 from core.rule_gen import export_threat_rules, generate_snort_rule, generate_stix_bundle, generate_yara_rule
 
-# Ghidra Cyberpunk / Obsidian Dark Palette
+# Modern Tokyo Night & Ghidra Cyber Tactical QSS
 GHIDRA_QSS = """
 QMainWindow {
-    background-color: #16161e;
+    background-color: #13141c;
 }
 QMenuBar {
     background-color: #1a1b26;
-    color: #c0caf5;
-    border-bottom: 1px solid #2f3549;
-    font-size: 13px;
+    color: #a9b1d6;
+    border-bottom: 1px solid #24283b;
+    font-size: 12px;
     padding: 2px;
 }
 QMenuBar::item:selected {
-    background-color: #283457;
-    color: #00f0ff;
-    border-radius: 3px;
+    background-color: #24283b;
+    color: #7dcfff;
+    border-radius: 4px;
 }
 QMenu {
     background-color: #1a1b26;
@@ -87,108 +91,120 @@ QMenu {
     border: 1px solid #414868;
 }
 QMenu::item:selected {
-    background-color: #3b4261;
-    color: #00f0ff;
+    background-color: #2f3549;
+    color: #7dcfff;
 }
 QToolBar {
-    background-color: #1a1b26;
-    border-bottom: 1px solid #2f3549;
-    spacing: 6px;
-    padding: 3px;
+    background-color: #16161e;
+    border-bottom: 1px solid #24283b;
+    spacing: 8px;
+    padding: 5px 8px;
 }
 QToolButton {
-    background-color: #24283b;
+    background-color: #1f2335;
     color: #c0caf5;
-    border: 1px solid #414868;
-    border-radius: 4px;
-    padding: 5px 10px;
+    border: 1px solid #3b4261;
+    border-radius: 5px;
+    padding: 6px 12px;
     font-weight: bold;
-    font-size: 12px;
+    font-size: 11px;
 }
 QToolButton:hover {
-    background-color: #3b4261;
-    border-color: #00f0ff;
-    color: #00f0ff;
+    background-color: #283457;
+    border-color: #7dcfff;
+    color: #7dcfff;
 }
 QDockWidget {
-    color: #00f0ff;
+    color: #7dcfff;
     font-weight: bold;
-    font-size: 12px;
+    font-size: 11px;
 }
 QDockWidget::title {
-    background-color: #1f2335;
-    padding: 6px;
-    border: 1px solid #2f3549;
-    border-radius: 3px;
+    background-color: #1a1b26;
+    padding: 7px 10px;
+    border: 1px solid #24283b;
+    border-radius: 4px;
 }
 QTreeWidget, QTableWidget, QTextEdit, QLineEdit, QComboBox {
     background-color: #1a1b26;
     color: #c0caf5;
-    border: 1px solid #2f3549;
-    border-radius: 4px;
-    gridline-color: #2f3549;
+    border: 1px solid #24283b;
+    border-radius: 6px;
+    gridline-color: #1f2335;
     font-family: "DejaVu Sans Mono", "Courier New", monospace;
-    font-size: 12px;
+    font-size: 11px;
 }
-QPushButton {
-    background-color: #24283b;
-    color: #00f0ff;
-    border: 1px solid #414868;
-    border-radius: 4px;
-    padding: 6px 12px;
-    font-weight: bold;
-}
-QPushButton:hover {
-    background-color: #3b4261;
-    border-color: #00f0ff;
+QTableWidget {
+    alternate-background-color: #16161e;
 }
 QTreeWidget::item:selected, QTableWidget::item:selected {
     background-color: #283457;
-    color: #00f0ff;
+    color: #7dcfff;
 }
 QHeaderView::section {
     background-color: #1f2335;
     color: #7aa2f7;
-    padding: 4px;
+    padding: 5px;
     font-weight: bold;
-    border: 1px solid #2f3549;
-}
-QTabWidget::pane {
-    border: 1px solid #2f3549;
-    background-color: #1a1b26;
-}
-QTabBar::tab {
-    background-color: #1f2335;
-    color: #7aa2f7;
-    padding: 6px 14px;
-    border: 1px solid #2f3549;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-    margin-right: 2px;
-}
-QTabBar::tab:selected {
-    background-color: #283457;
-    color: #00f0ff;
-    font-weight: bold;
-    border-bottom: 2px solid #00f0ff;
-}
-QStatusBar {
-    background-color: #1a1b26;
-    color: #7aa2f7;
-    border-top: 1px solid #2f3549;
+    border: 1px solid #24283b;
     font-size: 11px;
 }
-QProgressBar {
+QTabWidget::pane {
+    border: 1px solid #24283b;
+    background-color: #16161e;
+    border-radius: 6px;
+}
+QTabBar::tab {
+    background-color: #1a1b26;
+    color: #7aa2f7;
+    padding: 7px 16px;
+    border: 1px solid #24283b;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    margin-right: 3px;
+    font-size: 11px;
+    font-weight: bold;
+}
+QTabBar::tab:selected {
+    background-color: #24283b;
+    color: #7dcfff;
+    border-bottom: 2px solid #7dcfff;
+}
+QStatusBar {
+    background-color: #16161e;
+    color: #7aa2f7;
+    border-top: 1px solid #24283b;
+    font-size: 11px;
+}
+QPushButton {
     background-color: #1f2335;
-    border: 1px solid #414868;
+    color: #7dcfff;
+    border: 1px solid #3b4261;
+    border-radius: 5px;
+    padding: 6px 14px;
+    font-weight: bold;
+    font-size: 11px;
+}
+QPushButton:hover {
+    background-color: #283457;
+    border-color: #7dcfff;
+}
+QProgressBar {
+    background-color: #1a1b26;
+    border: 1px solid #3b4261;
     border-radius: 4px;
     text-align: center;
     color: #ffffff;
     font-weight: bold;
+    font-size: 10px;
 }
 QProgressBar::chunk {
-    background-color: #ff5555;
+    background-color: #f7768e;
     border-radius: 3px;
+}
+QScrollArea {
+    border: none;
+    background-color: transparent;
 }
 """
 
@@ -229,16 +245,51 @@ ZGUuDQ0KJAAAAAAAAABQRQAATAEDAAAAAAAAAAAAAAAAAAAAAAAA
 """
 
 
+def create_stat_card(title: str, value: str, subvalue: str, border_color: str = "#3b4261", value_color: str = "#7dcfff") -> QFrame:
+    """Helper to create a modern glowing KPI metric card."""
+    frame = QFrame()
+    frame.setStyleSheet(f"""
+        QFrame {{
+            background-color: #1a1b26;
+            border: 1px solid {border_color};
+            border-left: 4px solid {border_color};
+            border-radius: 6px;
+            padding: 8px 12px;
+        }}
+    """)
+    layout = QVBoxLayout(frame)
+    layout.setContentsMargins(4, 4, 4, 4)
+    layout.setSpacing(2)
+
+    lbl_title = QLabel(title.upper())
+    lbl_title.setStyleSheet("color: #7aa2f7; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;")
+    
+    lbl_val = QLabel(value)
+    lbl_val.setStyleSheet(f"color: {value_color}; font-size: 15px; font-weight: bold;")
+    
+    lbl_sub = QLabel(subvalue)
+    lbl_sub.setStyleSheet("color: #a9b1d6; font-size: 10px;")
+    lbl_sub.setWordWrap(True)
+
+    layout.addWidget(lbl_title)
+    layout.addWidget(lbl_val)
+    layout.addWidget(lbl_sub)
+    return frame
+
+
 class GhidraForensicMainWindow(QMainWindow):
     """
-    SUDO SPANDR - NSA Ghidra-Style Desktop Forensic Workstation Window.
-    Multi-Window Dockable Workspace with Raw Email Post-Mortem, Hex Dissector, Listing View,
-    and Local LLM Neural Copilot.
+    SUDO SPANDR - NSA Ghidra-Style Desktop Forensic Workstation Window v2.5.
+    Features:
+    - Top Executive Metric Deck (4 Glowing Forensic KPI Cards)
+    - Central Visual Dashboard with Pathology Cards & Envelope Inspector (Zero boring text walls)
+    - Synchronized Byte & Hex Dissector with Shannon Entropy Visualizer
+    - Interactive Local LLM Copilot Chat & Quick Prompts
     """
     def __init__(self, evidence_path: Optional[str] = None):
         super().__init__()
-        self.setWindowTitle("SUDO SPANDR v2.4 — Ghidra Forensic Workstation [AICTE SIH #26106]")
-        self.resize(1500, 950)
+        self.setWindowTitle("SUDO SPANDR v2.5 — Ghidra Forensic Workstation [AICTE SIH #26106]")
+        self.resize(1520, 960)
         self.setStyleSheet(GHIDRA_QSS)
 
         # Forensic State
@@ -281,7 +332,7 @@ class GhidraForensicMainWindow(QMainWindow):
         open_action.triggered.connect(self.action_open_evidence)
         file_menu.addAction(open_action)
 
-        batch_action = QAction("📁 Batch Folder Audit...", self)
+        batch_action = QAction("📁 Batch Directory Audit...", self)
         batch_action.setShortcut("Ctrl+B")
         batch_action.triggered.connect(self.action_batch_audit)
         file_menu.addAction(batch_action)
@@ -298,7 +349,7 @@ class GhidraForensicMainWindow(QMainWindow):
         export_yara_action.triggered.connect(self.action_export_rules)
         file_menu.addAction(export_yara_action)
 
-        export_autopsy_action = QAction("💾 Save Complete Post-Mortem Autopsy Report...", self)
+        export_autopsy_action = QAction("💾 Export Full Autopsy Dossier (HTML)...", self)
         export_autopsy_action.triggered.connect(self.action_export_autopsy)
         file_menu.addAction(export_autopsy_action)
 
@@ -309,17 +360,12 @@ class GhidraForensicMainWindow(QMainWindow):
 
         # Analysis Menu (Ghidra Style)
         analysis_menu = menubar.addMenu("&Analysis")
-        autopsy_action = QAction("🧬 Run Deep Raw Email Post-Mortem (Autopsy)", self)
-        autopsy_action.setShortcut("Ctrl+M")
-        autopsy_action.triggered.connect(self.action_deep_autopsy)
-        analysis_menu.addAction(autopsy_action)
-
         auto_analyze_action = QAction("⚡ Run Complete Forensic Auto-Analysis", self)
         auto_analyze_action.setShortcut("Ctrl+A")
         auto_analyze_action.triggered.connect(self.action_auto_analyze)
         analysis_menu.addAction(auto_analyze_action)
 
-        copilot_action = QAction("🤖 Launch Local LLM Neural Copilot", self)
+        copilot_action = QAction("🤖 Focus Local LLM Neural Copilot", self)
         copilot_action.setShortcut("Ctrl+L")
         copilot_action.triggered.connect(self.action_focus_copilot)
         analysis_menu.addAction(copilot_action)
@@ -347,7 +393,6 @@ class GhidraForensicMainWindow(QMainWindow):
 
         toolbar.addAction(open_action)
         toolbar.addSeparator()
-        toolbar.addAction(autopsy_action)
         toolbar.addAction(auto_analyze_action)
         toolbar.addAction(copilot_action)
         toolbar.addAction(pdf_action)
@@ -356,11 +401,11 @@ class GhidraForensicMainWindow(QMainWindow):
 
         # Live Threat Status Label in Toolbar
         self.tb_threat_badge = QLabel("  THREAT SCORE: 0/100 [CLEAN]  ", self)
-        self.tb_threat_badge.setStyleSheet("color: #50fa7b; font-weight: bold; font-size: 13px; background: #24283b; border-radius: 4px; padding: 4px;")
+        self.tb_threat_badge.setStyleSheet("color: #9ece6a; font-weight: bold; font-size: 12px; background: #1f2335; border: 1px solid #3b4261; border-radius: 4px; padding: 4px 8px;")
         toolbar.addWidget(self.tb_threat_badge)
 
     def _init_docks(self):
-        """Creates the Ghidra-style multi-window docks including Local LLM Copilot."""
+        """Creates the Ghidra-style multi-window docks."""
 
         # ----------------------------------------------------------------------
         # DOCK 1: Program Trees & Evidence Explorer (Left)
@@ -369,46 +414,95 @@ class GhidraForensicMainWindow(QMainWindow):
         self.dock_evidence.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea)
         
         self.tree_evidence = QTreeWidget()
-        self.tree_evidence.setHeaderLabels(["Evidence Artifact", "Type / Entropy"])
+        self.tree_evidence.setHeaderLabels(["Evidence Artifact", "Type / Status"])
+        self.tree_evidence.setColumnWidth(0, 200)
         self.tree_evidence.itemClicked.connect(self._on_tree_item_clicked)
         self.dock_evidence.setWidget(self.tree_evidence)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dock_evidence)
 
         # ----------------------------------------------------------------------
-        # DOCK 2: Listing, RFC Disassembler & Deep Post-Mortem Autopsy View (Center Top)
+        # DOCK 2: Central Visual Dissector & Pathology Dashboard (Center)
         # ----------------------------------------------------------------------
-        self.dock_listing = QDockWidget("📜 LISTING & DEEP POST-MORTEM AUTOPSY DISSECTOR", self)
+        self.dock_central = QDockWidget("🔬 FORENSIC POST-MORTEM & DISASSEMBLY WORKSPACE", self)
+        central_container = QWidget()
+        cc_layout = QVBoxLayout(central_container)
+        cc_layout.setContentsMargins(4, 4, 4, 4)
+        cc_layout.setSpacing(6)
+
+        # Top Executive Metric Deck (4 Glowing Forensic KPI Cards)
+        self.kpi_layout = QHBoxLayout()
+        self.kpi_layout.setSpacing(8)
+        
+        self.kpi_threat = create_stat_card("Threat Score", "0/100", "Evaluating matrix...", "#f7768e", "#f7768e")
+        self.kpi_envelope = create_stat_card("Envelope Check", "VALIDATING", "Sender identity", "#7aa2f7", "#7dcfff")
+        self.kpi_crypto = create_stat_card("Crypto Auth", "SPF/DKIM", "Checking DNS records", "#e0af68", "#e0af68")
+        self.kpi_payload = create_stat_card("Carved Payload", "0 Attachments", "Entropy scanning", "#bb9af7", "#bb9af7")
+
+        self.kpi_layout.addWidget(self.kpi_threat)
+        self.kpi_layout.addWidget(self.kpi_envelope)
+        self.kpi_layout.addWidget(self.kpi_crypto)
+        self.kpi_layout.addWidget(self.kpi_payload)
+        cc_layout.addLayout(self.kpi_layout)
+
+        # Central Tabs
         self.tab_listing = QTabWidget()
 
-        # Tab 1: 🧬 Deep Post-Mortem Autopsy Sheet
-        self.txt_autopsy = QTextEdit()
-        self.txt_autopsy.setReadOnly(True)
-        self.tab_listing.addTab(self.txt_autopsy, "🧬 Post-Mortem Autopsy Sheet")
+        # Tab 1: 📊 Visual Forensic Pathology Cards (Interactive Cards - No giant text dump!)
+        self.scroll_pathology = QScrollArea()
+        self.scroll_pathology.setWidgetResizable(True)
+        self.widget_pathology = QWidget()
+        self.layout_pathology = QVBoxLayout(self.widget_pathology)
+        self.layout_pathology.setContentsMargins(8, 8, 8, 8)
+        self.layout_pathology.setSpacing(10)
+        self.scroll_pathology.setWidget(self.widget_pathology)
+        self.tab_listing.addTab(self.scroll_pathology, "📊 Pathology Findings & Autopsy Cards")
 
-        # Tab 2: 📜 RFC Envelope Listing
-        self.txt_listing = QTextEdit()
-        self.txt_listing.setReadOnly(True)
-        self.tab_listing.addTab(self.txt_listing, "📜 RFC Disassembly Stream")
+        # Tab 2: 📜 Searchable RFC Header Inspector Table
+        header_widget = QWidget()
+        hw_layout = QVBoxLayout(header_widget)
+        hw_layout.setContentsMargins(4, 4, 4, 4)
+        
+        search_box = QHBoxLayout()
+        lbl_search = QLabel("🔍 Filter Headers:")
+        lbl_search.setStyleSheet("color: #7dcfff; font-weight:bold;")
+        self.edit_header_filter = QLineEdit()
+        self.edit_header_filter.setPlaceholderText("Type header name (e.g. 'Authentication', 'From', 'Received')...")
+        self.edit_header_filter.textChanged.connect(self._filter_header_table)
+        search_box.addWidget(lbl_search)
+        search_box.addWidget(self.edit_header_filter)
+        hw_layout.addLayout(search_box)
+
+        self.tbl_headers = QTableWidget(0, 2)
+        self.tbl_headers.setHorizontalHeaderLabels(["RFC 5322 Header Name", "Analyzed Header Value"])
+        self.tbl_headers.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.tbl_headers.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        hw_layout.addWidget(self.tbl_headers)
+        self.tab_listing.addTab(header_widget, "📜 RFC Header Inspector")
 
         # Tab 3: 🔗 Extracted Hyperlinks & Homographs
         self.tbl_urls = QTableWidget(0, 5)
-        self.tbl_urls.setHorizontalHeaderLabels(["Detected URL / Link", "Extracted Domain", "Punycode / Homograph", "Risk Level", "Pathology Indicator"])
-        self.tbl_urls.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tbl_urls.setHorizontalHeaderLabels(["Detected Hyperlink", "Target Domain", "Punycode / Homograph", "Risk Rating", "Pathology Indicators"])
+        self.tbl_urls.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.tbl_urls.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.tbl_urls.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.tbl_urls.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.tbl_urls.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         self.tab_listing.addTab(self.tbl_urls, "🔗 URL & Homograph Matrix")
 
         # Tab 4: 🧩 MIME Hierarchy & Attachments
         self.tbl_mime = QTableWidget(0, 5)
-        self.tbl_mime.setHorizontalHeaderLabels(["Part #", "Content-Type", "Declared Name", "True Magic Bytes", "Entropy"])
+        self.tbl_mime.setHorizontalHeaderLabels(["Part #", "Content-Type", "Declared Name", "True Magic Bytes", "Entropy Score"])
         self.tbl_mime.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tab_listing.addTab(self.tbl_mime, "🧩 MIME & Attachment Anatomy")
 
-        # Tab 5: 📄 Decoded Body
+        # Tab 5: 📄 Plaintext & HTML Body
         self.txt_body = QTextEdit()
         self.txt_body.setReadOnly(True)
-        self.tab_listing.addTab(self.txt_body, "📄 Plaintext & HTML Body")
+        self.tab_listing.addTab(self.txt_body, "📄 Plaintext Body Preview")
 
-        self.dock_listing.setWidget(self.tab_listing)
-        self.setCentralWidget(self.dock_listing)
+        cc_layout.addWidget(self.tab_listing)
+        self.dock_central.setWidget(central_container)
+        self.setCentralWidget(self.dock_central)
 
         # ----------------------------------------------------------------------
         # DOCK 3: Synchronized Byte / Hex Dissector & Carver (Center Bottom)
@@ -421,15 +515,15 @@ class GhidraForensicMainWindow(QMainWindow):
         # Entropy Speedometer Header Bar
         entropy_bar_box = QHBoxLayout()
         entropy_lbl = QLabel("Shannon Entropy Speedometer:")
-        entropy_lbl.setStyleSheet("color: #00f0ff; font-weight: bold;")
-        self.lbl_entropy_value = QLabel("7.82 / 8.00 bits [MALWARE SHELLCODE PACKED]")
-        self.lbl_entropy_value.setStyleSheet("color: #ff5555; font-weight: bold;")
+        entropy_lbl.setStyleSheet("color: #7dcfff; font-weight: bold;")
+        self.lbl_entropy_value = QLabel("7.82 / 8.00 bits [SHELLCODE PACKED]")
+        self.lbl_entropy_value.setStyleSheet("color: #f7768e; font-weight: bold;")
         
         self.progress_entropy = QProgressBar()
         self.progress_entropy.setMaximum(800)
         self.progress_entropy.setValue(782)
         self.progress_entropy.setFormat("%v / 8.0 bits")
-        self.progress_entropy.setStyleSheet("QProgressBar::chunk { background-color: #ff5555; }")
+        self.progress_entropy.setStyleSheet("QProgressBar::chunk { background-color: #f7768e; }")
 
         entropy_bar_box.addWidget(entropy_lbl)
         entropy_bar_box.addWidget(self.progress_entropy)
@@ -448,7 +542,7 @@ class GhidraForensicMainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.dock_hex)
 
         # ----------------------------------------------------------------------
-        # DOCK 4: 🤖 LOCAL LLM NEURAL FORENSIC COPILOT (Right Side)
+        # DOCK 4: 🤖 LOCAL LLM NEURAL COPILOT (Right Top)
         # ----------------------------------------------------------------------
         self.dock_copilot = QDockWidget("🤖 LOCAL LLM NEURAL COPILOT (OLLAMA & CATBERT)", self)
         copilot_widget = QWidget()
@@ -458,20 +552,20 @@ class GhidraForensicMainWindow(QMainWindow):
         # Local LLM Config Row
         cfg_box = QHBoxLayout()
         lbl_eng = QLabel("Engine:")
-        lbl_eng.setStyleSheet("color: #00f0ff; font-weight:bold;")
+        lbl_eng.setStyleSheet("color: #7dcfff; font-weight:bold; font-size:11px;")
         self.combo_engine = QComboBox()
         self.combo_engine.addItems([
-            "Ollama Local (http://localhost:11434)",
+            "Ollama (http://localhost:11434)",
             "Local Llama.cpp (http://localhost:8080/v1)",
-            "Embedded Neural Engine (Air-Gap Safe)",
+            "Embedded CatBERT (100% Offline)",
         ])
         
         lbl_mod = QLabel("Model:")
-        lbl_mod.setStyleSheet("color: #00f0ff; font-weight:bold;")
+        lbl_mod.setStyleSheet("color: #7dcfff; font-weight:bold; font-size:11px;")
         self.combo_model = QComboBox()
         self.combo_model.addItems(["llama3:latest", "mistral:latest", "qwen2.5:coder", "phi3", "catbert-neural-cpu"])
 
-        self.btn_ping_llm = QPushButton("⚡ Ping LLM")
+        self.btn_ping_llm = QPushButton("⚡ Ping")
         self.btn_ping_llm.clicked.connect(self.action_ping_local_llm)
 
         cfg_box.addWidget(lbl_eng)
@@ -482,13 +576,13 @@ class GhidraForensicMainWindow(QMainWindow):
         cp_layout.addLayout(cfg_box)
 
         # Status indicator
-        self.lbl_llm_status = QLabel("● Status: Embedded Air-Gap Neural Engine Ready (100% Offline)")
-        self.lbl_llm_status.setStyleSheet("color: #50fa7b; font-weight: bold; background: #24283b; padding: 4px; border-radius: 4px;")
+        self.lbl_llm_status = QLabel("● Status: Embedded Air-Gap Neural Engine Active (100% Offline)")
+        self.lbl_llm_status.setStyleSheet("color: #9ece6a; font-weight: bold; font-size: 11px; background: #1f2335; padding: 4px 8px; border-radius: 4px;")
         cp_layout.addWidget(self.lbl_llm_status)
 
         # Quick Tactical AI Actions Row
         actions_box = QHBoxLayout()
-        self.btn_ai_autopsy = QPushButton("⚡ Deep LLM Autopsy")
+        self.btn_ai_autopsy = QPushButton("⚡ Deep Autopsy")
         self.btn_ai_autopsy.clicked.connect(lambda: self.action_run_quick_prompt("autopsy"))
 
         self.btn_ai_fir = QPushButton("📝 Police FIR Draft")
@@ -510,7 +604,7 @@ class GhidraForensicMainWindow(QMainWindow):
         # Chat Input Box Row
         input_box = QHBoxLayout()
         self.edit_copilot_input = QLineEdit()
-        self.edit_copilot_input.setPlaceholderText("Ask Local LLM: e.g. 'Is the attachment dangerous?' or 'Explain header spoofing'...")
+        self.edit_copilot_input.setPlaceholderText("Ask Local LLM: e.g. 'Is the attachment dangerous?' or 'Explain spoofing'...")
         self.edit_copilot_input.returnPressed.connect(self.action_send_copilot_chat)
 
         self.btn_send_chat = QPushButton("Send")
@@ -572,7 +666,7 @@ class GhidraForensicMainWindow(QMainWindow):
             self.status.showMessage(f"✔ Seized Evidence Ingested: {fname} │ SHA-256: {self.evidence.get('sha256')[:24]}...")
             
             # Greet in Copilot
-            self._append_copilot_message("SYSTEM", f"Seized evidence artifact <b>'{fname}'</b> loaded. Cryptographic hash locked: <code>{self.evidence.get('sha256')}</code>. Ready for forensic query.")
+            self._append_copilot_message("SYSTEM", f"Evidence artifact <b>'{fname}'</b> loaded. Cryptographic hash locked. Ready for Local LLM forensic query.")
         except Exception as e:
             QMessageBox.critical(self, "Forensic Parse Error", f"Failed to ingest evidence: {str(e)}")
 
@@ -584,185 +678,228 @@ class GhidraForensicMainWindow(QMainWindow):
         self.hops = analyze_relay_hops(self.evidence.get("received_hops", []))
         self.ai_review = perform_offline_cognitive_nlp_analysis(self.evidence, self.threat)
         self._refresh_all_views()
-        self._append_copilot_message("SYSTEM", "Sample synthetic phishing evidence loaded. Ready for Local LLM forensic inquiry.")
+        self._append_copilot_message("SYSTEM", "Sample synthetic phishing evidence loaded. Ready for Local LLM inquiry.")
 
     def _refresh_all_views(self):
         """Synchronizes data across all Ghidra docks."""
+        self._update_kpi_deck()
         self._populate_evidence_tree()
-        self._populate_autopsy_view()
-        self._populate_listing_view()
+        self._populate_pathology_cards()
+        self._populate_header_table()
         self._populate_urls_view()
         self._populate_mime_view()
         self._populate_hex_view()
         self._populate_hops_and_rules()
         self._update_toolbar_badge()
 
-    # ==========================================================================
-    # DEEP RAW EMAIL POST-MORTEM & AUTOPSY ENGINE
-    # ==========================================================================
-    def _generate_post_mortem_html(self) -> str:
-        """Generates comprehensive coroner-style forensic autopsy report."""
-        meta = self.evidence.get("meta", {})
-        sha256 = self.evidence.get("sha256", "0" * 64)
-        md5 = self.evidence.get("md5", "0" * 32)
-        sha512 = self.evidence.get("sha512", "0" * 128)
-        size_bytes = self.evidence.get("size_bytes", 0)
-        fname = self.evidence.get("filename", "evidence.eml")
-        
+    def _update_kpi_deck(self):
+        """Updates the 4 top glowing KPI cards with live metrics."""
         score = self.threat.get("risk_score", 0)
         verdict = self.threat.get("verdict", "SUSPICIOUS")
-        verdict_color = "#ff5555" if score >= 75 else "#ffb86c" if score >= 45 else "#50fa7b"
+        score_col = "#f7768e" if score >= 75 else "#e0af68" if score >= 45 else "#9ece6a"
 
+        # Card 1: Threat Score
+        self.kpi_threat.findChildren(QLabel)[1].setText(f"{score}/100")
+        self.kpi_threat.findChildren(QLabel)[1].setStyleSheet(f"color: {score_col}; font-size: 16px; font-weight: bold;")
+        self.kpi_threat.findChildren(QLabel)[2].setText(f"Verdict: {verdict}")
+
+        # Card 2: Envelope Check
+        meta = self.evidence.get("meta", {})
+        from_dom = meta.get("from", "").split("@")[-1].rstrip(">").strip() if "@" in meta.get("from", "") else "N/A"
+        ret_dom = meta.get("return_path", "").split("@")[-1].rstrip(">").strip() if "@" in meta.get("return_path", "") else "N/A"
+        is_mismatch = (from_dom.lower() != ret_dom.lower()) and (ret_dom != "N/A")
+        
+        env_status = "❌ SPOOFED MISMATCH" if is_mismatch else "✔ ALIGNED"
+        env_col = "#f7768e" if is_mismatch else "#9ece6a"
+        self.kpi_envelope.findChildren(QLabel)[1].setText(env_status)
+        self.kpi_envelope.findChildren(QLabel)[1].setStyleSheet(f"color: {env_col}; font-size: 14px; font-weight: bold;")
+        self.kpi_envelope.findChildren(QLabel)[2].setText(f"From: {from_dom} │ Return: {ret_dom}")
+
+        # Card 3: Crypto Auth
         auth = self.threat.get("auth_matrix", {})
-        spf_st = auth.get("spf", {}).get("status", "NONE")
-        dkim_st = auth.get("dkim", {}).get("status", "NONE")
-        dmarc_st = auth.get("dmarc", {}).get("status", "NONE")
+        spf = auth.get("spf", {}).get("status", "NONE")
+        dkim = auth.get("dkim", {}).get("status", "NONE")
+        dmarc = auth.get("dmarc", {}).get("status", "NONE")
+        all_pass = (spf == "PASS" and dkim == "PASS")
+        
+        self.kpi_crypto.findChildren(QLabel)[1].setText("✔ PASSING" if all_pass else "❌ AUTH FAILED")
+        self.kpi_crypto.findChildren(QLabel)[1].setStyleSheet(f"color: {'#9ece6a' if all_pass else '#f7768e'}; font-size: 14px; font-weight: bold;")
+        self.kpi_crypto.findChildren(QLabel)[2].setText(f"SPF: {spf} │ DKIM: {dkim} │ DMARC: {dmarc}")
 
-        ai = self.ai_review
+        # Card 4: Carved Payload
         attachments = self.evidence.get("attachments", [])
+        if attachments:
+            att = attachments[0]
+            forensics = analyze_attachment_forensics(att)
+            self.kpi_payload.findChildren(QLabel)[1].setText(f"{forensics['entropy']:.2f} bits")
+            self.kpi_payload.findChildren(QLabel)[1].setStyleSheet(f"color: {'#f7768e' if forensics['entropy'] >= 7.2 else '#e0af68'}; font-size: 15px; font-weight: bold;")
+            self.kpi_payload.findChildren(QLabel)[2].setText(f"{att.get('filename', 'part')[:20]} ({forensics['magic_type'][:15]})")
+        else:
+            self.kpi_payload.findChildren(QLabel)[1].setText("Clean Body")
+            self.kpi_payload.findChildren(QLabel)[1].setStyleSheet("color: #9ece6a; font-size: 14px; font-weight: bold;")
+            self.kpi_payload.findChildren(QLabel)[2].setText("No binary attachments found")
 
-        # Pathology findings accumulation
-        pathology_bullets = []
+    def _populate_pathology_cards(self):
+        """Builds modern visual cards for the Pathology Findings tab instead of a plain text wall."""
+        # Clear existing cards
+        while self.layout_pathology.count():
+            item = self.layout_pathology.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
 
-        # 1. Header Spoofing Pathology
+        meta = self.evidence.get("meta", {})
+        threat = self.threat
+        ai = self.ai_review
+
+        # ----------------------------------------------------------------------
+        # Card 1: Envelope Identity & Spoofing Breakdown
+        # ----------------------------------------------------------------------
+        card_env = QFrame()
+        card_env.setStyleSheet("background-color: #1a1b26; border: 1px solid #3b4261; border-radius: 8px; padding: 12px;")
+        layout_env = QVBoxLayout(card_env)
+        
+        lbl_env_title = QLabel("🔍 ENVELOPE IDENTITY & SENDER SPOOFING PATHOLOGY")
+        lbl_env_title.setStyleSheet("color: #7dcfff; font-size: 13px; font-weight: bold;")
+        layout_env.addWidget(lbl_env_title)
+
+        grid_env = QGridLayout()
+        grid_env.addWidget(QLabel("Declared From Header:"), 0, 0)
+        from_val = html.escape(str(meta.get('from', 'N/A')))
+        lbl_from = QLabel(f"<b>{from_val}</b>")
+        lbl_from.setStyleSheet("color: #ffffff; background: #24283b; padding: 4px; border-radius: 4px;")
+        grid_env.addWidget(lbl_from, 0, 1)
+
+        grid_env.addWidget(QLabel("Actual Return-Path:"), 1, 0)
+        ret_val = html.escape(str(meta.get('return_path', 'N/A')))
+        lbl_ret = QLabel(f"<b>{ret_val}</b>")
+        lbl_ret.setStyleSheet("color: #e0af68; background: #24283b; padding: 4px; border-radius: 4px;")
+        grid_env.addWidget(lbl_ret, 1, 1)
+
+        grid_env.addWidget(QLabel("Subject Line:"), 2, 0)
+        sub_val = html.escape(str(meta.get('subject', 'N/A')))
+        lbl_sub = QLabel(f"<b>{sub_val}</b>")
+        lbl_sub.setStyleSheet("color: #c0caf5;")
+        grid_env.addWidget(lbl_sub, 2, 1)
+        layout_env.addLayout(grid_env)
+        self.layout_pathology.addWidget(card_env)
+
+        # ----------------------------------------------------------------------
+        # Card 2: Root Cause Pathology Findings
+        # ----------------------------------------------------------------------
+        card_path = QFrame()
+        card_path.setStyleSheet("background-color: #1a1b26; border: 1px solid #f7768e; border-left: 5px solid #f7768e; border-radius: 8px; padding: 12px;")
+        layout_path = QVBoxLayout(card_path)
+
+        lbl_path_title = QLabel("🚨 PRIMARY PATHOLOGY FINDINGS (ROOT CAUSE OF MALICE)")
+        lbl_path_title.setStyleSheet("color: #f7768e; font-size: 13px; font-weight: bold;")
+        layout_path.addWidget(lbl_path_title)
+
+        # Check anomalies
+        anomalies = []
         from_hdr = meta.get("from", "")
         ret_hdr = meta.get("return_path", "")
         if ret_hdr and ("@" in ret_hdr and "@" in from_hdr):
-            ret_domain = ret_hdr.split("@")[-1].rstrip(">").strip()
-            from_domain = from_hdr.split("@")[-1].rstrip(">").strip()
-            if ret_domain.lower() != from_domain.lower():
-                pathology_bullets.append(
-                    f"<b style='color:#ff5555;'>[CRITICAL ENVELOPE MISMATCH]</b> "
-                    f"Declared From domain '<b>{from_domain}</b>' diverges from envelope Return-Path '<b>{ret_domain}</b>'. "
-                    f"Hallmark of forged sender impersonation (BEC / Spear-Phishing)."
-                )
+            ret_dom = ret_hdr.split("@")[-1].rstrip(">").strip()
+            from_dom = from_hdr.split("@")[-1].rstrip(">").strip()
+            if ret_dom.lower() != from_dom.lower():
+                anomalies.append(("❌ DOMAIN DIVERGENCE", f"Sender claims to be '{from_dom}', but mail routing returns to '{ret_dom}'. Classic spear-phishing forgery."))
 
-        # 2. Authentication Protocol Pathology
-        if spf_st == "FAIL" or dkim_st == "FAIL" or dmarc_st == "REJECT":
-            pathology_bullets.append(
-                f"<b style='color:#ff5555;'>[CRYPTO-AUTH BREACH]</b> "
-                f"Protocol validation failed (SPF: {spf_st}, DKIM: {dkim_st}, DMARC: {dmarc_st}). "
-                f"Originating relay MTA is not permitted to sign or route for this domain."
-            )
+        auth = threat.get("auth_matrix", {})
+        if auth.get("spf", {}).get("status") == "FAIL" or auth.get("dkim", {}).get("status") == "FAIL":
+            anomalies.append(("❌ CRYPTOGRAPHIC BREACH", "SPF / DKIM signatures failed verification. Originating server is not authorized to transmit for this domain."))
 
-        # 3. Attachment Masquerading & Entropy Pathology
+        attachments = self.evidence.get("attachments", [])
         for att in attachments:
             forensics = analyze_attachment_forensics(att)
-            att_name = att.get("filename", "unnamed")
-            ent = forensics["entropy"]
-            magic = forensics["magic_type"]
+            if forensics["entropy"] >= 7.2:
+                anomalies.append(("🚨 HIGH ENTROPY BINARY", f"Attachment '{att.get('filename')}' measured {forensics['entropy']:.2f} bits entropy with magic '{forensics['magic_type']}'. Indicates packed dropper or shellcode."))
 
-            if att_name.lower().endswith((".exe", ".scr", ".vbs", ".bat", ".pif", ".pdf.exe")):
-                pathology_bullets.append(
-                    f"<b style='color:#ff5555;'>[MALICIOUS MASQUERADING]</b> "
-                    f"Attachment '<b>{att_name}</b>' uses disguised extension! True Magic: <code>{magic}</code>."
-                )
-            if ent >= 7.2:
-                pathology_bullets.append(
-                    f"<b style='color:#ff5555;'>[HIGH ENTROPY SHELLCODE]</b> "
-                    f"Attachment stream entropy measured at <b>{ent:.2f} / 8.00 bits</b>. "
-                    f"Signature of encrypted payload, packer (UPX/Themida), or binary shellcode."
-                )
+        if not anomalies:
+            anomalies.append(("✔ STANDARD BENIGN", "No major cryptographic or masquerading anomalies detected in evidence artifact."))
 
-        # 4. Routing & Hop Anonymization Pathology
-        if self.hops:
-            origin_hop = self.hops[0]
-            if "Tor" in origin_hop["isp_label"] or origin_hop.get("is_tor", False):
-                pathology_bullets.append(
-                    f"<b style='color:#ff5555;'>[ANONYMIZED ORIGIN]</b> "
-                    f"Originating IP <b>{origin_hop['ip']}</b> is classified as an active <b>Tor Exit Node / Onion Proxy</b>."
-                )
+        for tag, desc in anomalies:
+            h_box = QHBoxLayout()
+            lbl_tag = QLabel(f" {tag} ")
+            lbl_tag.setStyleSheet("background-color: #283457; color: #f7768e; font-weight: bold; border-radius: 4px; padding: 3px 6px;")
+            lbl_desc = QLabel(desc)
+            lbl_desc.setStyleSheet("color: #c0caf5; font-size: 11px;")
+            lbl_desc.setWordWrap(True)
+            h_box.addWidget(lbl_tag)
+            h_box.addWidget(lbl_desc, 1)
+            layout_path.addLayout(h_box)
 
-        # 5. Linguistic & Psychological Coercion Pathology
-        if ai.get("psychological_triggers"):
-            triggers_str = ", ".join([t.get("trigger", "") for t in ai.get("psychological_triggers", [])])
-            pathology_bullets.append(
-                f"<b style='color:#ffb86c;'>[PSYCHOLOGICAL COERCION]</b> "
-                f"CatBERT NLP detected deliberate coercion tactics: <b>{triggers_str}</b>."
-            )
+        self.layout_pathology.addWidget(card_path)
 
-        if not pathology_bullets:
-            pathology_bullets.append("<span style='color:#50fa7b;'>✔ No critical anomalies detected in raw stream. Appears benign.</span>")
+        # ----------------------------------------------------------------------
+        # Card 3: Cryptographic Bitstream Custody (Section 63 BSA 2023)
+        # ----------------------------------------------------------------------
+        card_bsa = QFrame()
+        card_bsa.setStyleSheet("background-color: #1a1b26; border: 1px solid #9ece6a; border-left: 5px solid #9ece6a; border-radius: 8px; padding: 12px;")
+        layout_bsa = QVBoxLayout(card_bsa)
 
-        pathology_html = "".join([f"<li style='margin-bottom:6px; color:#c0caf5;'>{p}</li>" for p in pathology_bullets])
+        lbl_bsa_title = QLabel("⚖️ SECTION 63 BHARATIYA SAKSHYA ADHINIYAM (BSA 2023) ADMISSIBILITY")
+        lbl_bsa_title.setStyleSheet("color: #9ece6a; font-size: 13px; font-weight: bold;")
+        layout_bsa.addWidget(lbl_bsa_title)
 
-        html = f"""
-        <html>
-        <body style="font-family:'DejaVu Sans Mono', monospace; background-color:#1a1b26; color:#c0caf5; padding:10px;">
-        
-        <div style="border-bottom: 2px solid #00f0ff; padding-bottom: 8px; margin-bottom: 12px;">
-            <h2 style="color:#00f0ff; margin:0;">🧬 FORENSIC POST-MORTEM & RAW EMAIL AUTOPSY REPORT</h2>
-            <p style="color:#7aa2f7; margin:4px 0 0 0; font-size:12px;">
-                SUDO SPANDR Digital Forensics Lab │ AICTE SIH 2026 Problem Statement #26106 │ Case Ref: {self.case_id}
-            </p>
-        </div>
+        sha256 = self.evidence.get("sha256", "0" * 64)
+        md5 = self.evidence.get("md5", "0" * 32)
+        grid_bsa = QGridLayout()
+        grid_bsa.addWidget(QLabel("SHA-256 Bitstream Hash:"), 0, 0)
+        lbl_sha = QLabel(f"<code>{sha256}</code>")
+        lbl_sha.setStyleSheet("color: #9ece6a; font-weight: bold;")
+        grid_bsa.addWidget(lbl_sha, 0, 1)
 
-        <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
-            <tr style="background-color:#1f2335;">
-                <td style="padding:6px; color:#7aa2f7; width:22%;"><b>EVIDENCE ARTIFACT</b></td>
-                <td style="padding:6px; color:#ffffff;">{fname} ({size_bytes} bytes / {size_bytes / 1024.0:.2f} KB)</td>
-                <td style="padding:6px; color:#7aa2f7; width:22%;"><b>FORENSIC VERDICT</b></td>
-                <td style="padding:6px; color:{verdict_color}; font-weight:bold;">● {verdict} ({score}/100)</td>
-            </tr>
-            <tr>
-                <td style="padding:6px; color:#7aa2f7;"><b>MIME CONTENT-TYPE</b></td>
-                <td style="padding:6px; color:#c0caf5;">{self.evidence.get('content_type', 'message/rfc822')}</td>
-                <td style="padding:6px; color:#7aa2f7;"><b>ATTACHMENTS CARVED</b></td>
-                <td style="padding:6px; color:#c0caf5;">{len(attachments)} Part(s) Extracted</td>
-            </tr>
-            <tr style="background-color:#1f2335;">
-                <td style="padding:6px; color:#7aa2f7;"><b>CLAIMED SENDER</b></td>
-                <td style="padding:6px; color:#ffffff;">{meta.get('from', 'N/A')}</td>
-                <td style="padding:6px; color:#7aa2f7;"><b>ACTUAL RETURN-PATH</b></td>
-                <td style="padding:6px; color:#ffb86c;">{meta.get('return_path', 'N/A')}</td>
-            </tr>
-            <tr>
-                <td style="padding:6px; color:#7aa2f7;"><b>MESSAGE-ID</b></td>
-                <td style="padding:6px; color:#c0caf5;" colspan="3">{meta.get('message_id', 'N/A')}</td>
-            </tr>
-        </table>
+        grid_bsa.addWidget(QLabel("MD5 Checksum:"), 1, 0)
+        lbl_md5 = QLabel(f"<code>{md5}</code>")
+        lbl_md5.setStyleSheet("color: #a9b1d6;")
+        grid_bsa.addWidget(lbl_md5, 1, 1)
+        layout_bsa.addLayout(grid_bsa)
 
-        <div style="background-color:#24283b; border-left: 4px solid {verdict_color}; padding: 10px; margin-bottom:14px; border-radius:3px;">
-            <h3 style="color:{verdict_color}; margin:0 0 6px 0;">PATHOLOGY AUTOPSY FINDINGS (ROOT CAUSE OF MALICE):</h3>
-            <ul style="margin:0; padding-left:20px;">
-                {pathology_html}
-            </ul>
-        </div>
+        btn_box = QHBoxLayout()
+        btn_gen_pdf = QPushButton("📄 Export Signed Section 63 BSA PDF Certificate")
+        btn_gen_pdf.clicked.connect(self.action_export_bsa_pdf)
+        btn_box.addWidget(btn_gen_pdf)
+        btn_box.addStretch()
+        layout_bsa.addLayout(btn_box)
 
-        <h3 style="color:#00f0ff; border-bottom:1px solid #2f3549; padding-bottom:4px; margin-top:16px;">🔏 CRYPTOGRAPHIC BITSTREAM INTEGRITY (SECTION 63 BSA 2023):</h3>
-        <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:14px;">
-            <tr style="background-color:#1f2335;">
-                <td style="padding:5px; color:#7aa2f7; width:15%;"><b>MD5 CHECKSUM</b></td>
-                <td style="padding:5px; color:#c0caf5;"><code>{md5}</code></td>
-            </tr>
-            <tr>
-                <td style="padding:5px; color:#7aa2f7;"><b>SHA-256 DIGEST</b></td>
-                <td style="padding:5px; color:#50fa7b;"><code>{sha256}</code></td>
-            </tr>
-            <tr style="background-color:#1f2335;">
-                <td style="padding:5px; color:#7aa2f7;"><b>SHA-512 DIGEST</b></td>
-                <td style="padding:5px; color:#c0caf5;"><code>{sha512[:64]}...</code></td>
-            </tr>
-        </table>
+        self.layout_pathology.addWidget(card_bsa)
+        self.layout_pathology.addStretch()
 
-        <h3 style="color:#00f0ff; border-bottom:1px solid #2f3549; padding-bottom:4px; margin-top:16px;">🧠 COGNITIVE NLP THREAT INTENT DECOMPILATION:</h3>
-        <p style="margin:4px 0; color:#c0caf5;"><b>Attack Classification:</b> <span style="color:#ff5555;">{ai.get('attack_vector')}</span> ({ai.get('confidence_percent')}% confidence)</p>
-        <p style="margin:4px 0; color:#c0caf5;"><b>Linguistic Pathology:</b> {ai.get('executive_summary')}</p>
+    def _populate_header_table(self):
+        """Populates searchable RFC 5322 header inspector table."""
+        headers = self.evidence.get("headers_list", [])
+        self.tbl_headers.setRowCount(len(headers))
 
-        <h3 style="color:#00f0ff; border-bottom:1px solid #2f3549; padding-bottom:4px; margin-top:16px;">⚖️ STATUTORY EVIDENCE CERTIFICATE STATUS:</h3>
-        <p style="color:#50fa7b; margin:4px 0;">
-            ✔ Certified under Section 63 of Bharatiya Sakshya Adhiniyam (BSA 2023). Bitstream preserved with zero alteration.
-            Court PDF Certificate can be exported via <b>[Ctrl+P]</b> or the toolbar button.
-        </p>
+        for idx, (k, v) in enumerate(headers):
+            it_name = QTableWidgetItem(k)
+            it_val = QTableWidgetItem(v)
 
-        </body>
-        </html>
-        """
-        return html
+            # Highlight important headers
+            k_lower = k.lower()
+            if k_lower in {"from", "return-path", "to", "subject"}:
+                it_name.setForeground(QColor("#7dcfff"))
+                it_name.setFont(QFont("DejaVu Sans Mono", 11, QFont.Weight.Bold))
+            elif "authentication" in k_lower or "dkim" in k_lower:
+                it_name.setForeground(QColor("#e0af68"))
+            elif "received" in k_lower:
+                it_name.setForeground(QColor("#7aa2f7"))
 
-    def _populate_autopsy_view(self):
-        """Renders the HTML post-mortem autopsy report."""
-        self.txt_autopsy.setHtml(self._generate_post_mortem_html())
+            self.tbl_headers.setItem(idx, 0, it_name)
+            self.tbl_headers.setItem(idx, 1, it_val)
+
+        # Body Preview
+        self.txt_body.setPlainText(self.evidence.get("body", "(Empty body text)"))
+
+    def _filter_header_table(self, query: str):
+        """Filters header table based on search input."""
+        q = query.strip().lower()
+        for row in range(self.tbl_headers.rowCount()):
+            it_name = self.tbl_headers.item(row, 0)
+            it_val = self.tbl_headers.item(row, 1)
+            name_match = (it_name and q in it_name.text().lower())
+            val_match = (it_val and q in it_val.text().lower())
+            self.tbl_headers.setRowHidden(row, not (name_match or val_match))
 
     def _populate_urls_view(self):
         """Populates URL & Homograph Matrix Table."""
@@ -778,10 +915,10 @@ class GhidraForensicMainWindow(QMainWindow):
 
             it_url = QTableWidgetItem(url_str[:60])
             it_dom = QTableWidgetItem(domain)
-            it_puny = QTableWidgetItem("YES (HOMOGRAPH ATTEMPT)" if is_puny else "NO (ASCII Standard)")
-            it_puny.setForeground(QColor("#ff5555" if is_puny else "#50fa7b"))
+            it_puny = QTableWidgetItem("YES (HOMOGRAPH ATTEMPT)" if is_puny else "NO (Standard ASCII)")
+            it_puny.setForeground(QColor("#f7768e" if is_puny else "#9ece6a"))
             it_risk = QTableWidgetItem(risk)
-            it_risk.setForeground(QColor("#ff5555" if risk == "CRITICAL" else "#ffb86c"))
+            it_risk.setForeground(QColor("#f7768e" if risk == "CRITICAL" else "#e0af68"))
             it_find = QTableWidgetItem(findings)
 
             self.tbl_urls.setItem(idx, 0, it_url)
@@ -815,9 +952,9 @@ class GhidraForensicMainWindow(QMainWindow):
             it_ct = QTableWidgetItem(att.get("content_type", "application/octet-stream"))
             it_name = QTableWidgetItem(att.get("filename", "unnamed.bin"))
             it_magic = QTableWidgetItem(forensics["magic_type"])
-            it_magic.setForeground(QColor("#ff5555" if "Executable" in forensics["magic_type"] else "#50fa7b"))
+            it_magic.setForeground(QColor("#f7768e" if "Executable" in forensics["magic_type"] else "#9ece6a"))
             it_ent = QTableWidgetItem(f"{forensics['entropy']:.2f} bits")
-            it_ent.setForeground(QColor("#ff5555" if forensics['entropy'] >= 7.2 else "#ffb86c"))
+            it_ent.setForeground(QColor("#f7768e" if forensics['entropy'] >= 7.2 else "#e0af68"))
 
             self.tbl_mime.setItem(idx, 0, it_idx)
             self.tbl_mime.setItem(idx, 1, it_ct)
@@ -831,43 +968,32 @@ class GhidraForensicMainWindow(QMainWindow):
 
         # Root: Case Container
         root_case = QTreeWidgetItem([f"Case: {self.case_id}", "Container"])
-        root_case.setForeground(0, QColor("#00f0ff"))
+        root_case.setForeground(0, QColor("#7dcfff"))
         root_case.setExpanded(True)
         self.tree_evidence.addTopLevelItem(root_case)
 
         # Active Mail Item
-        item_mail = QTreeWidgetItem([self.evidence.get("filename", "evidence.eml"), "RFC 5322 Stream"])
-        item_mail.setForeground(0, QColor("#50fa7b"))
+        item_mail = QTreeWidgetItem([self.evidence.get("filename", "evidence.eml"), "RFC 5322"])
+        item_mail.setForeground(0, QColor("#9ece6a"))
         root_case.addChild(item_mail)
 
         # Attachments Node
-        root_att = QTreeWidgetItem(["Extracted Carved Attachments", f"{len(self.evidence.get('attachments', []))} parts"])
+        root_att = QTreeWidgetItem(["Extracted Attachments", f"{len(self.evidence.get('attachments', []))} parts"])
         root_att.setExpanded(True)
         root_case.addChild(root_att)
 
         for att in self.evidence.get("attachments", []):
             forensics = analyze_attachment_forensics(att)
-            att_item = QTreeWidgetItem([att.get("filename", "unnamed.bin"), f"Entropy: {forensics['entropy']} ({forensics['magic_type']})"])
-            att_item.setForeground(0, QColor("#ff5555" if forensics['entropy'] >= 7.2 else "#ffb86c"))
+            att_item = QTreeWidgetItem([att.get("filename", "unnamed.bin"), f"Entropy {forensics['entropy']:.2f}"])
+            att_item.setForeground(0, QColor("#f7768e" if forensics['entropy'] >= 7.2 else "#e0af68"))
             root_att.addChild(att_item)
 
         # Cryptographic Hash Chain Node
         sha256 = self.evidence.get("sha256", "")
-        root_hashes = QTreeWidgetItem(["Cryptographic Hashes", "SHA-256 Bitstream"])
-        root_hashes.addChild(QTreeWidgetItem([f"SHA-256: {sha256[:16]}...{sha256[-8:]}", "Bitstream Hash"]))
-        root_hashes.addChild(QTreeWidgetItem(["Legal Admissibility", "Section 63 BSA 2023 Compliant"]))
+        root_hashes = QTreeWidgetItem(["Hash Chain", "SHA-256"])
+        root_hashes.addChild(QTreeWidgetItem([f"{sha256[:16]}...", "SHA-256 Digest"]))
+        root_hashes.addChild(QTreeWidgetItem(["Admissibility", "Section 63 BSA 2023"]))
         root_case.addChild(root_hashes)
-
-    def _populate_listing_view(self):
-        """Populates raw RFC disassembler listing with tokenized syntax."""
-        lines = []
-        headers = self.evidence.get("headers_list", [])
-        for k, v in headers:
-            color = "#00f0ff" if k.lower() in {"from", "return-path"} else "#ffb86c" if "authentication" in k.lower() else "#7aa2f7"
-            lines.append(f"<span style='color:{color}; font-weight:bold;'>{k}:</span> <span style='color:#c0caf5;'>{v}</span>")
-
-        self.txt_listing.setHtml("<br>".join(lines))
-        self.txt_body.setPlainText(self.evidence.get("body", "(Empty body)"))
 
     def _populate_hex_view(self):
         """Populates 16-byte hex dump and Shannon entropy gauge."""
@@ -883,7 +1009,7 @@ class GhidraForensicMainWindow(QMainWindow):
         
         tag = "[MALWARE SHELLCODE PACKED]" if entropy >= 7.2 else "[STANDARD BYTE DENSITY]"
         self.lbl_entropy_value.setText(f"{entropy:.2f} / 8.00 bits {tag}")
-        self.lbl_entropy_value.setStyleSheet(f"color: {'#ff5555' if entropy >= 7.2 else '#50fa7b'}; font-weight: bold;")
+        self.lbl_entropy_value.setStyleSheet(f"color: {'#f7768e' if entropy >= 7.2 else '#9ece6a'}; font-weight: bold;")
 
         # Populate Hex Table
         dump_data = generate_hex_dump(target_bytes, max_bytes=512)
@@ -893,9 +1019,9 @@ class GhidraForensicMainWindow(QMainWindow):
             it_off = QTableWidgetItem(row["offset"])
             it_off.setForeground(QColor("#7aa2f7"))
             it_hex = QTableWidgetItem(row["hex"])
-            it_hex.setForeground(QColor("#ffb86c"))
+            it_hex.setForeground(QColor("#e0af68"))
             it_asc = QTableWidgetItem(row["ascii"])
-            it_asc.setForeground(QColor("#50fa7b"))
+            it_asc.setForeground(QColor("#9ece6a"))
 
             self.tbl_hex.setItem(row_idx, 0, it_off)
             self.tbl_hex.setItem(row_idx, 1, it_hex)
@@ -908,7 +1034,7 @@ class GhidraForensicMainWindow(QMainWindow):
         for idx, h in enumerate(self.hops):
             it_num = QTableWidgetItem(f"Hop {h['hop_number']}")
             it_ip = QTableWidgetItem(h["ip"])
-            it_ip.setForeground(QColor("#ff5555" if "Tor" in h["isp_label"] else "#50fa7b"))
+            it_ip.setForeground(QColor("#f7768e" if "Tor" in h["isp_label"] else "#9ece6a"))
             it_delta = QTableWidgetItem(h["delta"])
             it_isp = QTableWidgetItem(h["isp_label"])
 
@@ -925,9 +1051,9 @@ class GhidraForensicMainWindow(QMainWindow):
         """Updates toolbar threat score indicator."""
         score = self.threat.get("risk_score", 0)
         verdict = self.threat.get("verdict", "SUSPICIOUS")
-        color = "#ff5555" if score >= 75 else "#ffb86c" if score >= 45 else "#50fa7b"
+        color = "#f7768e" if score >= 75 else "#e0af68" if score >= 45 else "#9ece6a"
         self.tb_threat_badge.setText(f"  THREAT SCORE: {score}/100 [{verdict}]  ")
-        self.tb_threat_badge.setStyleSheet(f"color: {color}; font-weight: bold; font-size: 13px; background: #24283b; border-radius: 4px; padding: 4px;")
+        self.tb_threat_badge.setStyleSheet(f"color: {color}; font-weight: bold; font-size: 12px; background: #1f2335; border: 1px solid #3b4261; border-radius: 4px; padding: 4px 8px;")
 
     def _on_tree_item_clicked(self, item: QTreeWidgetItem, column: int):
         """Handles tree item click for deep dissection."""
@@ -936,7 +1062,7 @@ class GhidraForensicMainWindow(QMainWindow):
             self.tab_listing.setCurrentIndex(1)
         elif "Entropy" in item.text(1):
             self.tab_listing.setCurrentIndex(3)
-        elif "Hashes" in txt:
+        elif "Hash" in txt:
             self.tab_listing.setCurrentIndex(0)
 
     # ==========================================================================
@@ -948,23 +1074,23 @@ class GhidraForensicMainWindow(QMainWindow):
         endpoint = "http://localhost:11434"
         if "8080" in eng_choice:
             endpoint = "http://localhost:8080/v1"
-        elif "Air-Gap" in eng_choice:
-            self.lbl_llm_status.setText("● Status: Embedded Neural Engine Active (Air-Gap Safe)")
-            self.lbl_llm_status.setStyleSheet("color: #50fa7b; font-weight: bold; background: #24283b; padding: 4px;")
+        elif "Embedded" in eng_choice:
+            self.lbl_llm_status.setText("● Status: Embedded CatBERT Neural Engine Active (Air-Gap Safe)")
+            self.lbl_llm_status.setStyleSheet("color: #9ece6a; font-weight: bold; font-size: 11px; background: #1f2335; padding: 4px 8px;")
             QMessageBox.information(self, "Embedded Neural Engine", "Embedded Air-Gap Neural Engine active and verified!\n100% Offline & Non-Network Dependent.")
             return
 
         st = check_local_llm_status(endpoint)
         if st["online"]:
             self.lbl_llm_status.setText(f"● Status: 🟢 {st['status_text']}")
-            self.lbl_llm_status.setStyleSheet("color: #50fa7b; font-weight: bold; background: #24283b; padding: 4px;")
+            self.lbl_llm_status.setStyleSheet("color: #9ece6a; font-weight: bold; font-size: 11px; background: #1f2335; padding: 4px 8px;")
             QMessageBox.information(self, "Local LLM Connected", f"Successfully connected to Local LLM!\nEndpoint: {st['endpoint']}\nAvailable Models: {', '.join(st['models'][:5])}")
             # Refresh models dropdown
             self.combo_model.clear()
             self.combo_model.addItems(st["models"])
         else:
             self.lbl_llm_status.setText("● Status: 🟡 Local Server Offline — Using Embedded Air-Gap Engine")
-            self.lbl_llm_status.setStyleSheet("color: #ffb86c; font-weight: bold; background: #24283b; padding: 4px;")
+            self.lbl_llm_status.setStyleSheet("color: #e0af68; font-weight: bold; font-size: 11px; background: #1f2335; padding: 4px 8px;")
             QMessageBox.warning(self, "Local Server Offline", f"No running local LLM found on {endpoint}.\nAutomatically falling back to Embedded Air-Gap Neural Engine!\n\nTo use Ollama, run: 'ollama run llama3' in a terminal.")
 
     def action_run_quick_prompt(self, action_type: str):
@@ -1031,8 +1157,8 @@ class GhidraForensicMainWindow(QMainWindow):
 
     def _append_copilot_message(self, sender: str, msg: str):
         """Appends formatted message bubble to the chat feed."""
-        color = "#00f0ff" if sender == "INVESTIGATOR" else "#50fa7b" if "LLM" in sender else "#ffb86c"
-        formatted = f"<div style='margin-bottom:8px;'><b style='color:{color};'>[{sender}]:</b><br><span style='color:#c0caf5;'>{msg.replace(chr(10), '<br>')}</span></div><hr style='border:1px solid #2f3549;'>"
+        color = "#7dcfff" if sender == "INVESTIGATOR" else "#9ece6a" if "LLM" in sender else "#e0af68"
+        formatted = f"<div style='margin-bottom:8px;'><b style='color:{color};'>[{sender}]:</b><br><span style='color:#c0caf5;'>{msg.replace(chr(10), '<br>')}</span></div><hr style='border:1px solid #24283b;'>"
         self.txt_copilot_chat.append(formatted)
         self.txt_copilot_chat.moveCursor(QTextCursor.MoveOperation.End)
 
@@ -1044,13 +1170,6 @@ class GhidraForensicMainWindow(QMainWindow):
     # ==========================================================================
     # TOOLBAR & MENU ACTIONS
     # ==========================================================================
-    def action_deep_autopsy(self):
-        """Triggers deep post-mortem analysis and highlights autopsy sheet."""
-        self._populate_autopsy_view()
-        self.tab_listing.setCurrentIndex(0)
-        self.status.showMessage("✔ Deep Raw Email Post-Mortem Dissection Completed.")
-        QMessageBox.information(self, "Post-Mortem Autopsy", "Raw Email Post-Mortem dissection completed!\nAll header inconsistencies, disguised binaries, and MIME pathologies mapped.")
-
     def action_open_evidence(self):
         """Opens native file chooser for evidence ingestion."""
         fname, _ = QFileDialog.getOpenFileName(
@@ -1141,7 +1260,19 @@ class GhidraForensicMainWindow(QMainWindow):
         """Saves plain text autopsy dossier to disk."""
         out_path = Path("./forensic_exports") / f"AUTOPSY_{self.evidence.get('sha256', '0000')[:12]}.html"
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(self._generate_post_mortem_html(), encoding="utf-8")
+        # Construct summary html
+        meta = self.evidence.get("meta", {})
+        from_esc = html.escape(str(meta.get('from', '')))
+        ret_esc = html.escape(str(meta.get('return_path', '')))
+        report_html = f"""
+        <html><body style="font-family:sans-serif; background:#1a1b26; color:#c0caf5; padding:20px;">
+        <h1 style="color:#7dcfff;">SUDO SPANDR FORENSIC AUTOPSY DOSSIER</h1>
+        <p><b>Case ID:</b> {self.case_id} │ <b>SHA-256:</b> {self.evidence.get('sha256')}</p>
+        <p><b>From:</b> {from_esc} │ <b>Return-Path:</b> {ret_esc}</p>
+        <p><b>Threat Score:</b> {self.threat.get('risk_score')}/100 ({self.threat.get('verdict')})</p>
+        </body></html>
+        """
+        out_path.write_text(report_html, encoding="utf-8")
         QMessageBox.information(
             self,
             "Autopsy Dossier Saved",
@@ -1166,12 +1297,12 @@ class GhidraForensicMainWindow(QMainWindow):
         QMessageBox.about(
             self,
             "About SUDO SPANDR Ghidra Suite",
-            "<h3>SUDO SPANDR Forensic Workstation v2.4</h3>"
+            "<h3>SUDO SPANDR Forensic Workstation v2.5</h3>"
             "<p><b>AICTE Smart India Hackathon 2026 | Problem Statement #26106</b></p>"
             "<p>Team SUDO SPANDR</p>"
-            "<p>NSA Ghidra & IDA Pro inspired Offline Digital Forensic & Post-Mortem Workstation.</p>"
-            "<p>Features: Raw Email Post-Mortem Dissection, Local LLM Neural Copilot (Ollama / CatBERT), "
-            "Synchronized Hex Dissector, and Section 63 BSA 2023 Court PDF Certificate Generator.</p>"
+            "<p>NSA Ghidra & IDA Pro inspired Offline Digital Forensic Workstation.</p>"
+            "<p>Features: Visual Pathology Cards, Searchable RFC Header Inspector, "
+            "Local LLM Neural Copilot (Ollama / CatBERT), Synchronized Hex Dissector, and Section 63 BSA PDF Generator.</p>"
         )
 
 
