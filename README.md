@@ -40,23 +40,25 @@ python3 app.py
 
 ## ⌨️ Interactive TUI Navigation & Hotkeys
 
-### Navigation Tabs:
-- `[1]`: **Overview & Threat Verdict** — Score dial, SPF/DKIM/DMARC matrix, cognitive/urgency triggers.
-- `[2]`: **RFC Headers & Hop Chronology** — Full header tree, multi-hop relay IP timeline, delta analysis.
-- `[3]`: **Hex Dump & Shannon Entropy Carver** — Live 16-byte hex dump + ASCII view, entropy distribution spectrum (`█▓▒░`).
-- `[4]`: **URL Defense Matrix** — Link breakdown table, punycode detection, credential harvesting flags.
-- `[5]`: **🤖 AI Forensic Analyst & Second Opinion** — Attack vector classification, psychological coercion triggers, synthetic/LLM phishing detector, and incident mitigation playbook.
-- `[6]`: **Section 63 BSA 2023 Certificate** — Live preview of court-admissible electronic evidence certificate.
-- `[7]`: **Batch Evidence Triage Queue** — Multi-evidence folder analysis table with risk scores.
-- `[8]`: **Threat Rules & Help** — Live generated YARA and Snort/Suricata rules.
+### Navigation Views:
+- `[1]`: **4-Panel Unified Command Deck** — Master dashboard with evidence tree, reasoning, hops, and carver.
+- `[2]`: **Hop Relay Map & Timeline** — Full header disassembler & bottom-up IP hop chronology.
+- `[3]`: **CatBERT NLP Cognitive AI** — Psychological coercion triggers & synthetic/LLM phishing intent.
+- `[4]`: **Hex Carver & Shannon Entropy** — Live 16-byte hex disassembler + entropy speedometer.
+- `[5]`: **Section 63 BSA 2023 Certificate** — Legal court certificate preview with hash verification.
+- `[6]`: **Batch Evidence Triage Queue** — Multi-file scanning table with risk scoring.
+- `[7]`: **YARA & Snort Rule Generator** — Enterprise network & file threat hunting rules.
+- `[8] / [P]`: **📌 Executive Incident Summary & Guide** — Plain-language summary designed for non-technical officers & judges.
 
-### Forensic Actions:
-- `[A]`: Run / Refresh **AI Second Opinion Analysis**
-- `[E]`: Export Section 63 BSA 2023 Certificate (`.cert.txt`, `.json`, `.sha256`) to `./forensic_exports/`
-- `[Y]`: Export YARA Threat Hunting Rule to disk
-- `[S]`: Export Snort / Suricata IDS Network Rule to disk
-- `[B]`: Run Batch Folder Scan on current/parent directory
-- `[O]`: Open and load a new `.eml` file interactively
+### User-Friendly Forensic Actions:
+- `[SPACE]`: **⚡ 1-Click Complete Auto-Audit** (Runs AI inference, generates Section 63 BSA PDF certificate, and saves YARA rules in one touch!)
+- `[← / →]` or `[TAB]`: **Smooth View Flipping** (Page between views without needing to remember numbers)
+- `[↑ / ↓]` + `[Enter]`: **Direct Evidence Picker** (Browse and load seized emails right from the screen)
+- `[E]`: Export Section 63 BSA 2023 **PDF + Text Certificate** to `./forensic_exports/`
+- `[O]`: Open interactive numbered file picker menu
+- `[B]`: Run Batch Folder Scan on directory
+- `[A]`: Run / Refresh CatBERT AI Intent Analysis
+- `[Y] / [S]`: Export YARA / Snort threat hunting rules
 - `[Q]`: Quit application cleanly
 
 
