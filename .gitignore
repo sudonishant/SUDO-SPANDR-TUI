@@ -8,4 +8,5 @@ env/
 venv/
 *.png
 !report_assets/*.png
+!docs/screenshots/*.png
 monograph.html

@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 440" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0f1d"/>
+      <stop offset="50%" stop-color="#0e172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <style>
+    @keyframes typeLine1 {
+      0%, 5% { opacity: 0; width: 0; }
+      10%, 100% { opacity: 1; width: 100%; }
+    }
+    @keyframes typeLine2 {
+      0%, 12% { opacity: 0; }
+      15%, 100% { opacity: 1; }
+    }
+    @keyframes typeLine3 {
+      0%, 22% { opacity: 0; }
+      25%, 100% { opacity: 1; }
+    }
+    @keyframes typeLine4 {
+      0%, 32% { opacity: 0; }
+      35%, 100% { opacity: 1; }
+    }
+    @keyframes typeLine5 {
+      0%, 42% { opacity: 0; }
+      45%, 100% { opacity: 1; }
+    }
+    @keyframes typeLine6 {
+      0%, 52% { opacity: 0; }
+      55%, 100% { opacity: 1; }
+    }
+    @keyframes typeLine7 {
+      0%, 62% { opacity: 0; }
+      65%, 100% { opacity: 1; }
+    }
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.4)); }
+      50% { filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.8)); }
+    }
+    .term-window { animation: pulseGlow 6s infinite ease-in-out; }
+    .term-text { font-family: 'Courier New', Courier, monospace, 'DejaVu Sans Mono'; font-size: 13px; fill: #e2e8f0; }
+    .t-prompt { fill: #38bdf8; font-weight: bold; }
+    .t-cmd { fill: #f8fafc; font-weight: bold; }
+    .t-success { fill: #4ade80; font-weight: bold; }
+    .t-warn { fill: #fbbf24; font-weight: bold; }
+    .t-danger { fill: #f87171; font-weight: bold; }
+    .t-cyan { fill: #22d3ee; }
+    .t-muted { fill: #94a3b8; }
+    .cursor { fill: #38bdf8; animation: blink 1s infinite; }
+  </style>
+
+  <!-- Terminal Window Container -->
+  <rect class="term-window" x="10" y="10" width="860" height="420" rx="12" fill="url(#bgGrad)" stroke="#1e293b" stroke-width="2"/>
+
+  <!-- Titlebar -->
+  <path d="M 10 22 C 10 15 15 10 22 10 L 858 10 C 865 10 870 15 870 22 L 870 42 L 10 42 Z" fill="#1e293b"/>
+  
+  <!-- Window Controls -->
+  <circle cx="32" cy="26" r="6" fill="#ef4444"/>
+  <circle cx="52" cy="26" r="6" fill="#f59e0b"/>
+  <circle cx="72" cy="26" r="6" fill="#10b981"/>
+
+  <!-- Window Title -->
+  <text x="440" y="29" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600" fill="#94a3b8">
+    SUDO SPANDR v2.4 — Offline Air-Gap Email Forensic Engine (AICTE SIH #26106)
+  </text>
+
+  <!-- Terminal Content Area -->
+  <g transform="translate(30, 75)" class="term-text">
+    
+    <!-- Line 1: Command Prompt -->
+    <g style="animation: typeLine1 10s infinite;">
+      <text x="0" y="0">
+        <tspan class="t-prompt">nee@kali-forensic:~$</tspan> 
+        <tspan class="t-cmd">./run_tui.sh "../Security alert (1).eml"</tspan>
+      </text>
+    </g>
+
+    <!-- Line 2: Ingestion & Cryptographic Hash -->
+    <g style="animation: typeLine2 10s infinite;">
+      <text x="0" y="30">
+        <tspan class="t-success">[✔] Evidence Ingested:</tspan> 
+        <tspan class="t-muted">Security alert (1).eml (13.6 KB)</tspan>
+      </text>
+      <text x="0" y="52">
+        <tspan class="t-cyan">[#] Bitstream SHA-256 :</tspan> 
+        <tspan fill="#f1f5f9">72c61465cf2ac170881b54a61fe8a0bca50c319cf9657cc40dcfb50504970bb7</tspan> 
+        <tspan class="t-success">[LOCKED]</tspan>
+      </text>
+    </g>
+
+    <!-- Line 3: Spoofing Dissection -->
+    <g style="animation: typeLine3 10s infinite;">
+      <text x="0" y="86">
+        <tspan class="t-warn">[!] SENDER SPOOFING PATHOLOGY:</tspan>
+      </text>
+      <text x="25" y="108">
+        <tspan class="t-muted">Declared From :</tspan> <tspan class="t-danger">Google &lt;no-reply@accounts.google.com&gt;</tspan>
+      </text>
+      <text x="25" y="128">
+        <tspan class="t-muted">Return-Path   :</tspan> <tspan class="t-warn">&lt;3cKeDaggTCykST...gaia.bounces.google.com&gt;</tspan>
+      </text>
+      <text x="25" y="148">
+        <tspan class="t-danger">Verdict       : ❌ DOMAIN DIVERGENCE DETECTED (MTA Route Desynchronization)</tspan>
+      </text>
+    </g>
+
+    <!-- Line 4: Payload Dissection & True Magic Bytes -->
+    <g style="animation: typeLine4 10s infinite;">
+      <text x="0" y="182">
+        <tspan class="t-danger">[🚨] ATTACHMENT CARVER &amp; SHANNON ENTROPY SPEEDOMETER:</tspan>
+      </text>
+      <text x="25" y="204">
+        <tspan class="t-muted">Declared Name :</tspan> <tspan fill="#f1f5f9">Invoice_Q3_Approved.pdf.exe</tspan> 
+        <tspan class="t-danger">[DOUBLE EXTENSION MASKING]</tspan>
+      </text>
+      <text x="25" y="224">
+        <tspan class="t-muted">True Magic    :</tspan> <tspan class="t-danger">4D 5A (MZ) — Actual: Windows PE32 Executable Binary!</tspan>
+      </text>
+      <text x="25" y="244">
+        <tspan class="t-muted">Entropy H(X)  :</tspan> <tspan class="t-danger">7.82 / 8.00 bits [MALWARE SHELLCODE / PACKED DROPPER]</tspan>
+      </text>
+    </g>
+
+    <!-- Line 5: Relay Transit Math -->
+    <g style="animation: typeLine5 10s infinite;">
+      <text x="0" y="278">
+        <tspan class="t-cyan">[🌐] RELAY TRANSIT TOPOLOGY:</tspan> 
+        <tspan class="t-muted">Hop 1: 209.85.220.73 (Google MTA, Δt=0s) ──► Hop 2: Not Logged (Δt=+1s)</tspan>
+      </text>
+    </g>
+
+    <!-- Line 6: Legal Certification -->
+    <g style="animation: typeLine6 10s infinite;">
+      <text x="0" y="308">
+        <tspan class="t-success">[⚖️] SECTION 63 BSA 2023 ADMISSIBILITY:</tspan> 
+        <tspan fill="#f1f5f9">Court Evidence Certificate Generated ──► </tspan>
+        <tspan class="t-cyan">./forensic_exports/BSA63_CERT_72C614.pdf</tspan>
+      </text>
+    </g>
+
+    <!-- Line 7: Interactive Status / Cursor -->
+    <g style="animation: typeLine7 10s infinite;">
+      <text x="0" y="338">
+        <tspan class="t-success">[✔] Workstation Ready.</tspan> 
+        <tspan class="t-muted">Press [SPACE] for 1-Click Auto-Audit │ Press [1-8] for Tabs │ Press [Q] to Exit</tspan>
+        <rect class="cursor" x="690" y="326" width="9" height="15"/>
+      </text>
+    </g>
+
+  </g>
+</svg>
