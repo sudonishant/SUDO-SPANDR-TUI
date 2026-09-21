@@ -1031,18 +1031,56 @@ def run_interactive_tui(state: ForensicTUIState):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="SUDO SPANDR TUI v2.4 - Standalone Terminal Forensic Engine (SIH #26106)"
+        prog="python3 app.py",
+        description="🛡️ SUDO SPANDR TUI v2.4 - Standalone Terminal Forensic Engine (SIH #26106)\n"
+                    "100% Offline Air-Gapped Email Forensic Reverse-Engineering & BSA-63 Certification Suite",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+SEQUENTIAL USAGE EXAMPLES:
+  1. Interactive TUI (Load Evidence):
+     python3 app.py "evidence.eml"
+
+  2. Court Certificate Generation (Section 63 BSA 2023):
+     python3 app.py --cert "evidence.eml" --officer "Inspector Sharma" --agency "Cyber Crime PS"
+
+  3. AI Cognitive NLP Intent & Psychological Coercion:
+     python3 app.py --ai "evidence.eml"
+
+  4. High-Volume Batch Directory Triage:
+     python3 app.py --batch /cases/incident_2026/ --export-csv triage_report.csv
+
+  5. Automated Threat Rule Synthesis (YARA / Snort):
+     python3 app.py --export-yara "evidence.eml" > rule.yar
+     python3 app.py --export-snort "evidence.eml" > snort.rules
+
+  6. Unix Pipe & STDIN Ingestion:
+     cat raw_mail.eml | python3 app.py --stdin
+"""
     )
-    parser.add_argument("file", nargs="?", default=None, help="Path to evidence file (.eml, .msg, .pst)")
-    parser.add_argument("--batch", "--batch-scan", metavar="DIR", dest="batch", help="Run batch forensic triage on directory of evidence files")
-    parser.add_argument("--export-csv", metavar="OUT_CSV", help="Export batch triage report to CSV")
-    parser.add_argument("--cert", metavar="FILE", help="Generate Section 63 BSA 2023 PDF/Text Certificate for file")
-    parser.add_argument("--officer", default="Digital Forensic Examiner (Team SUDO SPANDR)", help="Investigating Officer name for BSA Certificate")
-    parser.add_argument("--agency", default="Digital Forensics Lab (Team SUDO SPANDR - AICTE SIH #26106)", help="Agency/Lab name for BSA Certificate")
-    parser.add_argument("--export-yara", metavar="FILE", help="Generate YARA threat hunting rule for file")
-    parser.add_argument("--export-snort", metavar="FILE", help="Generate Snort network IDS rule for file")
-    parser.add_argument("--ai", action="store_true", help="Run CatBERT Cognitive Forensic Intent Analysis")
-    parser.add_argument("--stdin", action="store_true", help="Read raw email stream from STDIN pipe")
+    
+    # Positional
+    parser.add_argument("file", nargs="?", default=None, help="Path to evidence file (.eml, .msg, .pst) for interactive TUI")
+
+    # Group: Headless Forensics & AI
+    grp_analysis = parser.add_argument_group("🔍 Headless Forensics & Cognitive AI")
+    grp_analysis.add_argument("--ai", action="store_true", help="Run CatBERT Cognitive Forensic Intent Analysis on target file")
+    grp_analysis.add_argument("--stdin", action="store_true", help="Read raw email stream directly from STDIN pipe")
+
+    # Group: Legal Admissibility (Section 63 BSA 2023)
+    grp_legal = parser.add_argument_group("⚖️ Legal Admissibility (Section 63 BSA 2023)")
+    grp_legal.add_argument("--cert", metavar="FILE", help="Generate Section 63 BSA 2023 PDF/Text Certificate for file")
+    grp_legal.add_argument("--officer", default="Digital Forensic Examiner (Team SUDO SPANDR)", help="Investigating Officer name for BSA Certificate")
+    grp_legal.add_argument("--agency", default="Digital Forensics Lab (Team SUDO SPANDR - AICTE SIH #26106)", help="Agency/Lab name for BSA Certificate")
+
+    # Group: Threat Rule Generation
+    grp_rules = parser.add_argument_group("🛡️ Threat Signature & Rule Compilation")
+    grp_rules.add_argument("--export-yara", metavar="FILE", help="Generate YARA threat hunting rule for file")
+    grp_rules.add_argument("--export-snort", metavar="FILE", help="Generate Snort network IDS rule for file")
+
+    # Group: Batch Triage
+    grp_batch = parser.add_argument_group("📁 High-Volume Batch Directory Triage")
+    grp_batch.add_argument("--batch", "--batch-scan", metavar="DIR", dest="batch", help="Run batch forensic triage on directory of evidence files")
+    grp_batch.add_argument("--export-csv", metavar="OUT_CSV", help="Export batch triage report to CSV file")
 
     args = parser.parse_args()
 
