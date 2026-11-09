@@ -1250,9 +1250,9 @@ class GhidraForensicMainWindow(QMainWindow):
             self,
             "Threat Rules Exported",
             f"Enterprise Threat Hunting Rules generated:\n\n"
-            f"YARA Rule  : {res['yara_path']}\n"
-            f"Snort Rule : {res['snort_path']}\n"
-            f"STIX 2.1   : {res['stix_path']}"
+            f"YARA Rule  : {res['yara']}\n"
+            f"Snort Rule : {res['snort']}\n"
+            f"STIX 2.1   : {res['stix']}"
         )
         self.status.showMessage("✔ YARA & Snort Rules Saved to ./forensic_exports/")
 
