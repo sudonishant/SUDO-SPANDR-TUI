@@ -1,207 +1,113 @@
-# 🛡️ SUDO SPANDR TUI
-### ⚡ 100% Offline Air-Gap Email Forensic Terminal Workstation
-**AICTE Smart India Hackathon 2026 | Problem Statement #26106**
+# SUDO SPANDR TUI
 
-<div align="center">
+SUDO SPANDR is a local terminal application for triaging RFC-style email evidence. It parses raw email bytes, preserves hashes and headers in an evidence dictionary, scores several suspicious-mail signals, and can export triage and rule artifacts. A separate PyQt6 desktop entry point provides a graphical view of the same `core/` modules.
 
-[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Kali%20%7C%20macOS-0f172a.svg?style=for-the-badge&logo=linux&logoColor=white)](https://www.kali.org/)
-[![Air-Gap](https://img.shields.io/badge/Mode-100%25%20Offline%20Air--Gap-10b981.svg?style=for-the-badge&logo=shield&logoColor=white)]()
-[![SIH 2026](https://img.shields.io/badge/AICTE%20SIH%202026-PS%20%2326106-e11d48.svg?style=for-the-badge&logo=target&logoColor=white)](https://sih.gov.in)
-[![Section 63 BSA](https://img.shields.io/badge/Evidence%20Law-Section%2063%20BSA%202023-f59e0b.svg?style=for-the-badge&logo=republicofindia&logoColor=white)]()
+The default analysis path is local and deterministic. It is a triage aid, not a substitute for examiner review, malware detonation, legal advice, or a validated chain-of-custody process.
 
-</div>
+![Terminal demo](docs/terminal_animation.svg)
 
----
+## Current implementation
 
-## 🚀 Live Terminal Demo
+- **TUI:** `app.py` uses Rich and supports interactive review plus headless actions.
+- **Email parsing:** `core/parser.py` uses Python's standard-library `email` parser. It reads raw RFC 5322/MIME email bytes, extracts headers, body text, links, received hops, and attachments, and computes SHA-256, SHA-512, and MD5 digests.
+- **Triage:** `core/forensics.py` evaluates authentication-header and content signals; `core/carver.py` inspects attachment magic bytes and entropy; `core/batch.py` recursively scans directories and exports CSV.
+- **Exports:** `core/bsa_cert.py` writes certificate data and text/PDF outputs; `core/rule_gen.py` produces YARA, Snort, and STIX-style artifacts.
+- **Optional GUI:** `gui_app.py` imports PyQt6 and exposes file, batch, analysis, and export actions.
 
-<div align="center">
-  <img src="docs/terminal_animation.svg" alt="SUDO SPANDR Terminal Animation" width="100%">
-</div>
+## Quick start (TUI)
 
----
+Python 3.10+ is recommended because the code uses modern union type syntax.
 
-## 💡 What is SUDO SPANDR? (In 10 Seconds)
-
-Tired of uploading confidential case evidence to online cloud analyzers? 
-
-**SUDO SPANDR TUI** is a lightweight, super-fast terminal tool that dissects raw `.eml` and `.msg` emails **100% offline** in under **50ms**. No cloud, no data leaks, pure forensic reverse-engineering.
-
----
-
-## 📋 Complete Step-by-Step Sequence & Options Guide
-
----
-
-### 🟢 STEP 1: Installation & Quick Setup
-Get started in under 1 minute:
 ```bash
 git clone https://github.com/sudonishant/SUDO-SPANDR-TUI.git
 cd SUDO-SPANDR-TUI
-pip install -r requirements.txt
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+python app.py --help
 ```
 
-#### ⚙️ Installation Options:
-- **Option 1.1 (Recommended)**: Isolated Python virtual environment:
-  ```bash
-  python3 -m venv .venv && source .venv/bin/activate
-  pip install -r requirements.txt
-  ```
-- **Option 1.2**: System-wide Debian / Kali Linux installation:
-  ```bash
-  sudo apt update && sudo apt install python3-rich python3-pyqt6
-  ```
-
----
-
-### 🟢 STEP 2: Choose Your Launch Mode
-Choose the operational mode that fits your investigation environment:
+Open an evidence file in the interactive TUI:
 
 ```bash
-# Option 2.1: Launch Terminal TUI (Best for SSH / Headless Servers)
-./run_tui.sh
+python app.py path/to/message.eml
+# or, using the launcher:
+./run_tui.sh path/to/message.eml
+```
 
-# Option 2.2: Directly Target an Evidence File
-python3 app.py "/path/to/evidence.eml"
+The launcher may attempt a system package installation when `rich` is missing. Using the virtual environment above avoids that fallback and keeps installation isolated.
 
-# Option 2.3: Launch NSA Ghidra-Style Desktop GUI
+## Headless commands
+
+All paths below are examples; use copies of evidence where appropriate.
+
+```bash
+# Offline deterministic cognitive-NLP triage
+python app.py --ai message.eml
+
+# Generate certificate artifacts under ./forensic_exports/
+python app.py --cert message.eml --officer "Examiner Name" --agency "Forensic Lab"
+
+# Recursively triage .eml, .msg, .mbox, and .txt files and optionally write CSV
+python app.py --batch ./case-mail --export-csv ./out/triage.csv
+
+# Write generated rules to files
+python app.py --export-yara message.eml > out/message.yar
+python app.py --export-snort message.eml > out/message.rules
+
+# Parse an RFC-style message from a pipe
+cat message.eml | python app.py --stdin
+```
+
+Run `python app.py --help` for the complete option list, including `--officer`, `--agency`, and the `--batch-scan` alias.
+
+## Optional GUI
+
+The GUI imports `PyQt6`, but PyQt6 is **not** listed in the current `requirements.txt`. Install it using the platform's supported package manager or add it to a local environment before starting the GUI; for example, in an environment where the package is available:
+
+```bash
+python -m pip install PyQt6
 ./run_gui.sh
 ```
 
----
+The GUI launcher sets `DISPLAY=:0.0` when `DISPLAY` is unset; it therefore requires a working graphical display and is not a headless/SSH mode. On systems without a display, use the TUI instead.
 
-### 🟢 STEP 3: CLI Command-Line Options (`-h` / `--help`)
-Run automated forensic audits, batch scans, and court exports directly from your terminal:
+## Architecture
 
-```bash
-python3 app.py --help
+```text
+app.py / gui_app.py
+        |
+        +--> core/parser.py      RFC 5322/MIME parsing and hashes
+        +--> core/forensics.py   header/content threat signals
+        +--> core/ai_engine.py   deterministic heuristics and optional LLM calls
+        +--> core/carver.py      attachment signatures and entropy
+        +--> core/batch.py       recursive triage and CSV export
+        +--> core/bsa_cert.py    certificate data and PDF/text output
+        +--> core/rule_gen.py    YARA, Snort, and STIX-style output
 ```
 
-#### 🛠️ Complete CLI Options Reference Table:
+Generated files are written to the paths supplied on the command line; interactive exports default to `./forensic_exports/`. Keep generated reports outside the evidence directory when preserving an original collection.
 
-| Flag / Option | Parameter | Purpose / Description | Example Command Line |
-|:---|:---|:---|:---|
-| **`-h`**, **`--help`** | *None* | Show complete help menu, argument groups & examples | `python3 app.py -h` |
-| **`[file]`** | `path/to/mail.eml` | Open target email directly in interactive TUI | `python3 app.py "sample.eml"` |
-| **`--ai`** | *None* | Run CatBERT Cognitive AI intent & coercion analysis | `python3 app.py --ai "sample.eml"` |
-| **`--cert`** | `path/to/mail.eml` | Generate **Section 63 BSA 2023** Court PDF Certificate | `python3 app.py --cert "sample.eml"` |
-| **`--officer`** | `"Name"` | Set Investigating Officer name on court certificate | `--officer "Inspector Sharma"` |
-| **`--agency`** | `"Lab"` | Set Forensic Lab / Police Station name | `--agency "Cyber Crime PS"` |
-| **`--batch`** | `/dir/path/` | Scan entire directory of seized emails in bulk | `python3 app.py --batch /cases/spool/` |
-| **`--export-csv`** | `report.csv` | Export batch triage results to CSV spreadsheet | `--batch /cases/ --export-csv report.csv` |
-| **`--export-yara`** | `path/to/mail.eml` | Auto-compile YARA threat hunting rule to stdout/file | `python3 app.py --export-yara mail.eml > rule.yar` |
-| **`--export-snort`** | `path/to/mail.eml` | Auto-compile Snort/Suricata IDS network rule | `python3 app.py --export-snort mail.eml > rule.rules` |
-| **`--stdin`** | *None* | Ingest raw email stream from Unix pipe (MTA integration) | `cat mail.eml \| python3 app.py --stdin` |
+## Offline, local-network, and online behavior
 
----
+The normal `--ai` command calls `perform_offline_cognitive_nlp_analysis()` and does not require an API key or network connection. The GUI also contains optional local-model integrations for Ollama/OpenAI-compatible servers on localhost.
 
-### 🟢 STEP 4: In-App Interactive Forensic Navigation (Tabs [1] to [8])
-Once inside the TUI, navigate sequentially through the 8 specialized forensic panels:
+A separate GUI action can call `request_online_llm_analysis()`. If an API key is available, that code may send the message subject, sender/recipient/date metadata, authentication summary, and up to 1,000 characters of body text to the configured provider. The recognized environment variable names are:
 
-#### 1. Tab [1] — 4-Panel Master Command Deck
-<img src="docs/screenshots/02_tui_command_deck.png" width="100%">
+- `OPENROUTER_API_KEY`
+- `GEMINI_API_KEY`
+- `OPENAI_API_KEY`
 
-**Options & Controls in Tab 1:**
-- `[↑]` / `[↓]`: Browse and select seized emails from your evidence directory.
-- `[Enter]`: Ingest and lock selected evidence into the workstation.
-- `[SPACE]`: **1-Click Auto-Audit** (Runs full forensic autopsy and populates all indicators).
-- Live Indicators: Case SHA-256 bitstream digest, Sender Spoofing check, SPF/DKIM crypto status, and Attachment Entropy speedometer.
+Do not set these variables or use the online action for confidential evidence unless your investigation policy explicitly permits disclosure. Network use, provider retention, and returned model output are outside this repository's control. An online failure falls back to the deterministic offline analyzer.
 
----
+## Limitations and safe handling
 
-#### 2. Tab [2] — Hop Relay Map & Header Disassembler
-<img src="docs/screenshots/03_tui_hop_map.png" width="100%">
+- The parser understands raw RFC 5322/MIME messages. A file ending in `.msg` or `.pst` is not proof of native Outlook/PST decoding; the code does not include a dedicated Outlook/PST reader.
+- The repository has no automated test suite or CI configuration at present. Validate representative evidence and generated artifacts in an isolated environment before relying on them.
+- Threat scores, entropy thresholds, authentication observations, and heuristic “AI” labels are indicators for review, not proof that a message is malicious or that a sender is identified.
+- Do not open links or execute attachments during triage. Preserve original bytes, record hashes and handling steps, and inspect suspicious payloads only in an appropriate isolated lab.
+- Certificate output is generated from locally observed metadata; it does not by itself establish legal admissibility or an unbroken chain of custody. Have a qualified examiner and counsel review jurisdiction-specific requirements.
 
-**Options & Controls in Tab 2:**
-- Reconstruct the full chronological MTA transit graph ($Hop_1 \rightarrow Hop_n$).
-- Check transit latency deltas ($\Delta t = t_{hop_{n+1}} - t_{hop_n}$) to identify forged internal hops.
-- Inspect originating IP addresses, Tor exit nodes, and ISP network classifications.
+## License and attribution
 
----
-
-#### 3. Tab [3] — CatBERT AI: Intent & Psychological Coercion
-<img src="docs/screenshots/04_tui_catbert_ai.png" width="100%">
-
-**Options & Controls in Tab 3:**
-- View offline Cognitive NLP intent classification (runs in ~40ms on CPU).
-- Identify psychological coercion triggers (Urgency, Fear, Legal Intimidation, Fake Invoices).
-- Review automated Incident Mitigation Playbook steps.
-
----
-
-#### 4. Tab [4] — Hex Carver & Shannon Entropy Speedometer
-<img src="docs/screenshots/05_tui_hex_carver.png" width="100%">
-
-**Options & Controls in Tab 4:**
-- 16-byte Ghidra/IDA Pro style byte viewer with byte offsets and ASCII disassembly.
-- Real-time Shannon Entropy Speedometer ($0.00$ to $8.00$ bits) for detecting packed malware ($H \ge 7.2$).
-- True 16-byte magic verification: catches executables disguised with fake extensions (e.g. `Invoice.pdf.exe` $\rightarrow$ `4D 5A` MZ).
-
----
-
-#### 5. Additional Forensic Panels ([5] to [8])
-- **Tab [5] — BSA-63 PDF Certificate**: Preview and export Section 63 BSA 2023 legal certificate.
-- **Tab [6] — Batch Triage Queue**: Monitor bulk directory processing and severity rankings.
-- **Tab [7] — YARA & Snort Rules**: Auto-compiled threat signatures ready for perimeter firewalls.
-- **Tab [8] — Executive Summary**: Plain-language summary designed for police officers and judges.
-
----
-
-### 🟢 STEP 5: Quick Keyboard Hotkey Cheat Sheet
-
-| Key | Action | What Happens |
-|:---:|:---|:---|
-| **`[SPACE]`** | **1-Click Auto-Audit** | Runs full autopsy, AI check & generates exports |
-| **`[1]` – `[8]`** | Direct Tab Switch | Jump to any forensic panel instantly |
-| **`[E]`** | Export BSA-63 PDF | Exports Section 63 BSA 2023 court-admissible certificate |
-| **`[F]`** | Police FIR Draft | Generates ready-to-file complaint (IT Act §66D & BNS §318) |
-| **`[Y]`** | Export Threat Rules | Saves YARA & Snort rules directly to `./forensic_exports/` |
-| **`[Q]`** | Exit Cleanly | Closes the forensic workstation safely |
-
----
-
-## 📚 Technical Deep Dive & Legal Compliance (Expandable)
-
-<details>
-<summary><b>🔍 Click to View: 9-Stage Forensic Post-Mortem Pipeline</b></summary>
-
-<br>
-
-Every email passes through 9 deterministic stages:
-1. **Ingestion & Hash Locking**: Computes SHA-256 and MD5 digests in read-only memory.
-2. **RFC 5322 Unfolding**: Unfolds multiline CRLF headers without altering raw byte offsets.
-3. **Identity Alignment**: Detects domain divergence between `From:` and `Return-Path:`.
-4. **Crypto Verification**: Evaluates SPF, DKIM (RSA-SHA256), and DMARC alignment.
-5. **Relay Hop Chronology**: Bottom-up topological sorting of `Received:` headers ($\Delta t$ latency math).
-6. **True Magic Carver**: Validates initial 16 bytes (`4D 5A` MZ, `7F 45 4C 46` ELF, `25 50 44 46` PDF).
-7. **Shannon Entropy Meter**: Calculates bitstream randomness:
-   $$H(X) = -\sum_{i=0}^{255} P(x_i) \log_2 P(x_i)$$
-   *(Scores $\ge 7.2$ flag packed malware/shellcode).*
-8. **Cognitive NLP**: CatBERT neural heuristics score urgency, fear, and executive impersonation.
-9. **Legal Output**: Exports court-admissible Section 63 BSA PDF certificate & YARA rules.
-</details>
-
-<details>
-<summary><b>⚖️ Click to View: Section 63 BSA 2023 Court Admissibility</b></summary>
-
-<br>
-
-Under the **Bharatiya Sakshya Adhiniyam, 2023 (BSA 2023)** (which repealed Section 65B of the Indian Evidence Act, 1872), electronic evidence must be backed by a statutory certificate.
-
-SUDO SPANDR automatically produces court-ready PDFs containing:
-- Examiner official credentials & machine telemetry (MAC, OS build).
-- Cryptographic SHA-256 / MD5 bitstream immutability chain.
-- Statutory declaration under Section 63(4) BSA 2023.
-</details>
-
----
-
-## 👥 Authors & Acknowledgments
-
-- **Team**: SUDO SPANDR ([@sudonishant](https://github.com/sudonishant))
-- **Initiative**: AICTE Smart India Hackathon 2026 | Problem Statement #26106
-- **License**: MIT
-
-<div align="center">
-  <sub>Built for Sovereign Cyber Defense & National Incident Response • 100% Offline Air-Gap Certified</sub>
-</div>
+The repository is released under the MIT license. SUDO SPANDR was developed for the AICTE Smart India Hackathon 2026 problem statement #26106 by [@sudonishant](https://github.com/sudonishant).
